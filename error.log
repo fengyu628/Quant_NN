@@ -1,0 +1,18 @@
+Traceback (most recent call last):
+  File "D:/_NN_test/Quant/Quant_NN.py", line 23, in <module>
+    model.fit(train_data, target_data, batch_size=batch_size, nb_epoch=10, verbose=2, validation_split=0.2, shuffle=False)
+  File "C:\Users\fengyu\Anaconda2\lib\site-packages\keras-1.0.1-py2.7.egg\keras\models.py", line 413, in fit
+    sample_weight=sample_weight)
+  File "C:\Users\fengyu\Anaconda2\lib\site-packages\keras-1.0.1-py2.7.egg\keras\engine\training.py", line 1040, in fit
+    callback_metrics=callback_metrics)
+  File "C:\Users\fengyu\Anaconda2\lib\site-packages\keras-1.0.1-py2.7.egg\keras\engine\training.py", line 778, in _fit_loop
+    outs = f(ins_batch)
+  File "C:\Users\fengyu\Anaconda2\lib\site-packages\keras-1.0.1-py2.7.egg\keras\backend\theano_backend.py", line 507, in __call__
+    return self.function(*inputs)
+  File "C:\Users\fengyu\Anaconda2\lib\site-packages\theano-0.9.0.dev0-py2.7.egg\theano\compile\function_module.py", line 821, in __call__
+    allow_downcast=s.allow_downcast)
+  File "C:\Users\fengyu\Anaconda2\lib\site-packages\theano-0.9.0.dev0-py2.7.egg\theano\tensor\type.py", line 178, in filter
+    data.shape))
+TypeError: ('Bad input argument to theano function with name "C:\\Users\\fengyu\\Anaconda2\\lib\\site-packages\\keras-1.0.1-py2.7.egg\\keras\\backend\\theano_backend.py:503"  at index 0(0-based)', 'Wrong number of dimensions: expected 3, got 2 with shape (100L, 8L).')
+
+Process finished with exit code 1
