@@ -3,7 +3,7 @@
 import numpy as np
 import time, os
 
-data_length = 10000
+data_length = 1000
 
 def get_data():
     CurrentPath = os.getcwd()
