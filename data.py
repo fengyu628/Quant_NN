@@ -45,7 +45,7 @@ def data_from_file(filename):
             line_number += 1
 
     del train_data[-1]
-    return train_data, target_data
+    return np.asarray(train_data), np.asarray(target_data)
 
 ########################################################################################
 if __name__=='__main__':
@@ -54,9 +54,9 @@ if __name__=='__main__':
     t = time.time()
     x, y = data_from_file(file_name)
 
-    print(np.asarray(x).shape)
+    print(x.shape)
     # print(x)
-    print(np.asarray(y).shape)
+    print(y.shape)
     # print(y)
     # 提取列表中每个元素的第一项
     # print(np.asarray(x)[:,0])

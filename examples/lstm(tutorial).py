@@ -17,9 +17,10 @@ from theano import config
 import theano.tensor as tensor
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 
-import imdb
+import imdb_tutorial
 
-datasets = {'imdb': (imdb.load_data, imdb.prepare_data)}
+
+datasets = {'imdb': (imdb_tutorial.load_data, imdb_tutorial.prepare_data)}
 
 # Set the random number generators' seeds for consistency
 # 设置随机数生成器的种子
@@ -111,7 +112,9 @@ def init_params(options):
     # embedding
     randn = numpy.random.rand(options['n_words'],
                               options['dim_proj'])
+    # print(randn)
     params['Wemb'] = (0.01 * randn).astype(config.floatX)
+    # print(params)
     params = get_layer(options['encoder'])[0](options,
                                               params,
                                               prefix=options['encoder'])
@@ -166,6 +169,7 @@ def param_init_lstm(options, params, prefix='lstm'):
                            ortho_weight(options['dim_proj']),
                            ortho_weight(options['dim_proj']),
                            ortho_weight(options['dim_proj'])], axis=1)
+    print('W shape:', W.shape)
     params[_p(prefix, 'W')] = W
     U = numpy.concatenate([ortho_weight(options['dim_proj']),
                            ortho_weight(options['dim_proj']),
@@ -547,24 +551,35 @@ def train_lstm(
     print('Loading data')
     train, valid, test = load_data(n_words=n_words, valid_portion=0.05,
                                    maxlen=maxlen)
+    print('train shape:', numpy.asarray(train).shape)
+    print(train[0][0], train[1][0])
+    print('valid shape:', numpy.asarray(valid).shape)
+    print(valid[0][0], valid[1][0])
+    print('test shape:', numpy.asarray(test).shape)
+    print(test[0][0], test[1][0])
+
     if test_size > 0:
         # The test set is sorted by size, but we want to keep random
         # size example.  So we must select a random selection of the
         # examples.
+        # 手动指定test集合的大小，从原始test中随机抽取，形成新的test集合
         idx = numpy.arange(len(test[0]))
         numpy.random.shuffle(idx)
         idx = idx[:test_size]
         test = ([test[0][n] for n in idx], [test[1][n] for n in idx])
 
     ydim = numpy.max(train[1]) + 1
-
+    print('ydim:', ydim)
     model_options['ydim'] = ydim
 
     print('Building model')
     # This create the initial parameters as numpy ndarrays.
     # Dict name (string) -> numpy ndarray
     params = init_params(model_options)
+    print(params.keys())
+    # ['Wemb', 'lstm_W', 'lstm_U', 'lstm_b', 'U', 'b']
 
+    # 其实就是重新加载参数
     if reload_model:
         load_params('lstm_model.npz', params)
 
@@ -572,6 +587,8 @@ def train_lstm(
     # Dict name (string) -> Theano Tensor Shared Variable
     # params and tparams have different copy of the weights.
     tparams = init_tparams(params)
+    print(params.keys())
+    exit(1)
 
     # use_noise is for dropout
     (use_noise, x, mask,

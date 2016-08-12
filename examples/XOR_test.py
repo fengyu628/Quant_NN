@@ -19,21 +19,31 @@ y[3] = 0
 
 print 'making model...'
 model = Sequential()
+print('-'*50)
 model.add(Dense(2, input_dim=2))
+print('-'*50)
 model.add(Activation('tanh'))
+print('-'*50)
 model.add(Dense(1))
+print('-'*50)
 model.add(Activation('sigmoid'))
+print('-'*50)
 print model.summary()
 
 sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
 
+print('-'*50)
 print 'compiling...'
 model.compile(loss='mean_squared_error', optimizer=sgd, metrics=['accuracy'])
 
+print('-'*50)
 print 'fitting...'
-history = model.fit(X, y, nb_epoch=1000, batch_size=4, verbose=1)
+history = model.fit(X, y, nb_epoch=10, batch_size=4, verbose=1)
+print history
 
-print 'evaluate'
+print('-'*50)
+print 'evaluate...'
 print model.evaluate(X,y)
-print 'predict'
+print('-'*50)
+print 'predict...'
 print model.predict_classes(X)
