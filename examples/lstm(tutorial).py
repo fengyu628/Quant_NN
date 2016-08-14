@@ -199,7 +199,10 @@ time step 的序列数据，即不同句子的相同位置（time step）的单�
 3.scan函数的返回值有两个，第一个是_step的返回值（多个time step组成的），还有一个updates，updates
 的作用是来更新_step中返回的shared variable，但是_setp没有这样的变量返回，故这个东西在此处没有用处。
 '''
+# proj = get_layer(options['encoder'])[1](tparams, emb, options, prefix=options['encoder'], mask=mask)
+
 def lstm_layer(tparams, state_below, options, prefix='lstm', mask=None):
+    # state_below为输入序列
     nsteps = state_below.shape[0]
     if state_below.ndim == 3:
         n_samples = state_below.shape[1]
@@ -207,29 +210,42 @@ def lstm_layer(tparams, state_below, options, prefix='lstm', mask=None):
         n_samples = 1
 
     assert mask is not None
-
+    # 把_x的最后一维进行切片，保留n*dim和(n+1)*dim之间的部分,dim为每一片的长度，n为第几片
     def _slice(_x, n, dim):
         if _x.ndim == 3:
             return _x[:, :, n * dim:(n + 1) * dim]
         return _x[:, n * dim:(n + 1) * dim]
 
     def _step(m_, x_, h_, c_):
+        # lstm_U.shape (128L, 512L)
+        # h_:block上一次的输出
         preact = tensor.dot(h_, tparams[_p(prefix, 'U')])
+        # x_:本次的外部输入
         preact += x_
+        # 最后得到的preact为输入与block上一次的输出，经过权值运算后的结果：W*x + U*y(t-1) + b
 
+        # 1.隐含层的个数 dim_proj=128  #既是词向量的维度，又是LSTM中Hideden Units的个数
+        # 输入们的输出
         i = tensor.nnet.sigmoid(_slice(preact, 0, options['dim_proj']))
+        # 忘记门的输出
         f = tensor.nnet.sigmoid(_slice(preact, 1, options['dim_proj']))
+        # 输出们的输出
         o = tensor.nnet.sigmoid(_slice(preact, 2, options['dim_proj']))
+        # block的输入
         c = tensor.tanh(_slice(preact, 3, options['dim_proj']))
 
+        # c_：上一个cell的状态， 得到的c为cell的输出
         c = f * c_ + i * c
+        # m_: mask
         c = m_[:, None] * c + (1. - m_)[:, None] * c_
 
+        # h:block的输出
         h = o * tensor.tanh(c)
         h = m_[:, None] * h + (1. - m_)[:, None] * h_
 
         return h, c
 
+    # 本次的外部输入: W*x + b
     state_below = (tensor.dot(state_below, tparams[_p(prefix, 'W')]) +
                    tparams[_p(prefix, 'b')])
 
@@ -416,19 +432,28 @@ def build_model(tparams, options):
     # Used for dropout.
     use_noise = theano.shared(numpy_floatX(0.))
 
+    # 为什么要用长整型？
     x = tensor.matrix('x', dtype='int64')
     mask = tensor.matrix('mask', dtype=config.floatX)
     y = tensor.vector('y', dtype='int64')
 
     n_timesteps = x.shape[0]
     n_samples = x.shape[1]
+    print('x shape:', x.shape)
+    print('x:', x)
+    print('n_timesteps:', n_timesteps)
+    print('n_samples:', n_samples)
 
     emb = tparams['Wemb'][x.flatten()].reshape([n_timesteps,
                                                 n_samples,
                                                 options['dim_proj']])
+    print('emb shape:', emb.shape)
+    print('emb:', emb)
+    # emb为lstm层的输入序列
     proj = get_layer(options['encoder'])[1](tparams, emb, options,
                                             prefix=options['encoder'],
                                             mask=mask)
+    exit(100)
     if options['encoder'] == 'lstm':
         proj = (proj * mask[:, :, None]).sum(axis=0)
         proj = proj / mask.sum(axis=0)[:, None]
@@ -572,11 +597,10 @@ def train_lstm(
     print('ydim:', ydim)
     model_options['ydim'] = ydim
 
-    print('Building model')
+    print('Building model...')
     # This create the initial parameters as numpy ndarrays.
     # Dict name (string) -> numpy ndarray
     params = init_params(model_options)
-    print(params.keys())
     # ['Wemb', 'lstm_W', 'lstm_U', 'lstm_b', 'U', 'b']
 
     # 其实就是重新加载参数
@@ -586,13 +610,16 @@ def train_lstm(
     # This create Theano Shared Variable from the parameters.
     # Dict name (string) -> Theano Tensor Shared Variable
     # params and tparams have different copy of the weights.
+    # 转换成theano共享变量
     tparams = init_tparams(params)
     print(params.keys())
-    exit(1)
+    for k in params.keys():
+        print(k, params[k].shape)
 
     # use_noise is for dropout
     (use_noise, x, mask,
      y, f_pred_prob, f_pred, cost) = build_model(tparams, model_options)
+    exit(1)
 
     if decay_c > 0.:
         decay_c = theano.shared(numpy_floatX(decay_c), name='decay_c')
