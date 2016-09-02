@@ -20,6 +20,10 @@ from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 import imdb_tutorial
 
 
+time_start = time.time()
+def tt():
+    return '   -- time now: ' + str(time.time() - time_start)
+
 datasets = {'imdb': (imdb_tutorial.load_data, imdb_tutorial.prepare_data)}
 
 # Set the random number generators' seeds for consistency
@@ -279,6 +283,7 @@ def sgd(lr, tparams, grads, x, mask, y, cost):
     # for a mini-batch.
     gshared = [theano.shared(p.get_value() * 0., name='%s_grad' % k)
                for k, p in tparams.items()]
+    print('gshared:', gshared, tt())
     gsup = [(gs, g) for gs, g in zip(gshared, grads)]
 
     # Function that computes gradients for a mini-batch, but do not
@@ -439,7 +444,7 @@ def build_model(tparams, options):
 
     n_timesteps = x.shape[0]
     n_samples = x.shape[1]
-    print('x shape:', x.shape)
+    print('x shape:', x.shape, tt())
     print('x:', x)
     print('n_timesteps:', n_timesteps)
     print('n_samples:', n_samples)
@@ -447,22 +452,27 @@ def build_model(tparams, options):
     emb = tparams['Wemb'][x.flatten()].reshape([n_timesteps,
                                                 n_samples,
                                                 options['dim_proj']])
+    # emb为lstm层的输入序列
     print('emb shape:', emb.shape)
     print('emb:', emb)
-    # emb为lstm层的输入序列
+    # proj为lstm层的第一次迭代输出
+    print('call lstm_layer', tt())
     proj = get_layer(options['encoder'])[1](tparams, emb, options,
                                             prefix=options['encoder'],
                                             mask=mask)
-    exit(100)
     if options['encoder'] == 'lstm':
+        print('proj mask', tt())
         proj = (proj * mask[:, :, None]).sum(axis=0)
         proj = proj / mask.sum(axis=0)[:, None]
     if options['use_dropout']:
+        print('dropout', tt())
         proj = dropout_layer(proj, use_noise, trng)
-
+    # U*y + b ， 最终的输出
     pred = tensor.nnet.softmax(tensor.dot(proj, tparams['U']) + tparams['b'])
-
+    print('make function', tt())
+    # 之前计算proj和pred都是为了制作这个函数
     f_pred_prob = theano.function([x, mask], pred, name='f_pred_prob')
+    # pred.argmax(axis=1)：pred的每一行，在取最大值时的下标
     f_pred = theano.function([x, mask], pred.argmax(axis=1), name='f_pred')
 
     off = 1e-8
@@ -501,6 +511,7 @@ def pred_probs(f_pred_prob, prepare_data, data, iterator, verbose=False):
 '''
 计算误差，传入函数的地址作为参数，f_pred（预测的函数,输出结果为一个n_sample的向量）
 prepare_data ： 补零，加mask
+train_err = pred_error(f_pred, prepare_data, train, kf)
 '''
 def pred_error(f_pred, prepare_data, data, iterator, verbose=False):
     """
@@ -513,11 +524,12 @@ def pred_error(f_pred, prepare_data, data, iterator, verbose=False):
         x, mask, y = prepare_data([data[0][t] for t in valid_index],
                                   numpy.array(data[1])[valid_index],
                                   maxlen=None)
+        # preds 应该是下标？
         preds = f_pred(x, mask)
         targets = numpy.array(data[1])[valid_index]
         valid_err += (preds == targets).sum()
     valid_err = 1. - numpy_floatX(valid_err) / len(data[0])
-
+    # 误差越小时，返回值越接近1
     return valid_err
 
 '''
@@ -545,12 +557,12 @@ def train_lstm(
     lrate=0.0001,  # Learning rate for sgd (not used for adadelta and rmsprop)
     # 词汇量大小
     n_words=10000,  # Vocabulary size
-    optimizer=adadelta,  # sgd, adadelta and rmsprop available, sgd very hard to use, not recommanded (probably need momentum and decaying learning rate).
+    optimizer=sgd,  # sgd, adadelta and rmsprop available, sgd very hard to use, not recommanded (probably need momentum and decaying learning rate).
     encoder='lstm',  # TODO: can be removed must be lstm.
     # 保存最好的模型
     saveto='lstm_model.npz',  # The best model will be saved there
     # 在这么多次更新后，计算误差
-    validFreq=370,  # Compute the validation error after this number of update.
+    validFreq=20, #370,  # Compute the validation error after this number of update.
     # 在这么多次更新后，保存参数
     saveFreq=1110,  # Save the parameters after every saveFreq updates
     # 序列最大长度
@@ -573,7 +585,7 @@ def train_lstm(
 
     load_data, prepare_data = get_dataset(dataset)
 
-    print('Loading data')
+    print('Loading data', tt())
     train, valid, test = load_data(n_words=n_words, valid_portion=0.05,
                                    maxlen=maxlen)
     print('train shape:', numpy.asarray(train).shape)
@@ -581,7 +593,7 @@ def train_lstm(
     print('valid shape:', numpy.asarray(valid).shape)
     print(valid[0][0], valid[1][0])
     print('test shape:', numpy.asarray(test).shape)
-    print(test[0][0], test[1][0])
+    print(test[0][0], test[1][0], tt())
 
     if test_size > 0:
         # The test set is sorted by size, but we want to keep random
@@ -597,7 +609,7 @@ def train_lstm(
     print('ydim:', ydim)
     model_options['ydim'] = ydim
 
-    print('Building model...')
+    print('Building model...', tt())
     # This create the initial parameters as numpy ndarrays.
     # Dict name (string) -> numpy ndarray
     params = init_params(model_options)
@@ -619,7 +631,6 @@ def train_lstm(
     # use_noise is for dropout
     (use_noise, x, mask,
      y, f_pred_prob, f_pred, cost) = build_model(tparams, model_options)
-    exit(1)
 
     if decay_c > 0.:
         decay_c = theano.shared(numpy_floatX(decay_c), name='decay_c')
@@ -628,6 +639,7 @@ def train_lstm(
         weight_decay *= decay_c
         cost += weight_decay
 
+    # 这个f_cost貌似没用
     f_cost = theano.function([x, mask, y], cost, name='f_cost')
 
     grads = tensor.grad(cost, wrt=list(tparams.values()))
@@ -659,14 +671,19 @@ def train_lstm(
     estop = False  # early stop
     start_time = time.time()
     try:
+        # epoch 循环
         for eidx in range(max_epochs):
+            print('=== epoch:', eidx)
             n_samples = 0
 
             # Get new shuffled index for the training set.
+            # 每一个batch中需要训练的数量
             kf = get_minibatches_idx(len(train[0]), batch_size, shuffle=True)
+            print('kf len:', len(kf))
 
             for _, train_index in kf:
                 uidx += 1
+                print('--- minibatch:', uidx)
                 use_noise.set_value(1.)
 
                 # Select the random examples for this minibatch
@@ -676,16 +693,21 @@ def train_lstm(
                 # Get the data in numpy.ndarray format
                 # This swap the axis!
                 # Return something of shape (minibatch maxlen, n samples)
+                # 每个x长度保持一致，空余补零，mask用来表示x中那些位置是零
                 x, mask, y = prepare_data(x, y)
                 n_samples += x.shape[1]
 
+                # 计算损失函数
                 cost = f_grad_shared(x, mask, y)
+                # 更新权值
                 f_update(lrate)
 
+                # cost不是number，或者cost是infinite，总之就是cost计算错误
                 if numpy.isnan(cost) or numpy.isinf(cost):
                     print('bad cost detected: ', cost)
                     return 1., 1., 1.
 
+                # uidx对dispFreq求余，更新dispFreq次权值后显示计算状态
                 if numpy.mod(uidx, dispFreq) == 0:
                     print('Epoch ', eidx, 'Update ', uidx, 'Cost ', cost)
 
@@ -700,6 +722,7 @@ def train_lstm(
                     pickle.dump(model_options, open('%s.pkl' % saveto, 'wb'), -1)
                     print('Done')
 
+                #　每validFreq个数据，计算误差，更新history_errs
                 if numpy.mod(uidx, validFreq) == 0:
                     use_noise.set_value(0.)
                     train_err = pred_error(f_pred, prepare_data, train, kf)
@@ -709,6 +732,7 @@ def train_lstm(
 
                     history_errs.append([valid_err, test_err])
 
+                    # 对目前最小的valid_err进行的操作
                     if (best_p is None or
                         valid_err <= numpy.array(history_errs)[:,
                                                                0].min()):
@@ -719,10 +743,13 @@ def train_lstm(
                     print( ('Train ', train_err, 'Valid ', valid_err,
                            'Test ', test_err) )
 
+                    # 已经计算了history_errs次误差，并且，valid_err大于等于，history_errs中，除去最后的patience个数据外的，
+                    # valid_err的值中最小的
                     if (len(history_errs) > patience and
                         valid_err >= numpy.array(history_errs)[:-patience,
                                                                0].min()):
                         bad_counter += 1
+                        # 超过 patience 个 bad_counter
                         if bad_counter > patience:
                             print('Early Stop!')
                             estop = True
@@ -761,6 +788,7 @@ def train_lstm(
 
 
 if __name__ == '__main__':
+    print('program start!', tt())
     # See function train for all possible parameter and there definition.
     train_lstm(
         max_epochs=100,
