@@ -19,6 +19,7 @@ np.savetxt('data\\sin.txt', z)
 a = np.loadtxt('data\\sin.txt')
 print(a)
 
+# 画图
 plt.figure(figsize=(8, 4))
 plt.plot(x, y, label="$sin(x)$", color="blue", linewidth=1)
 plt.xlabel("x")
