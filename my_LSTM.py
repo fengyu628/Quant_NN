@@ -1,8 +1,23 @@
 # coding:utf-8
 
+import numpy
 import theano.tensor as tensor
+from theano import config
 
-def _step(m_, x_, h_, c_):
+input_dim = 2
+inner_units = 100
+
+
+def make_W():
+    randn = numpy.random.rand(input_dim, inner_units)
+    W = (0.01 * randn).astype(config.floatX)
+    return W
+
+W_i = make_W()
+W_o = make_W()
+W_f = make_W()
+
+def _step(x_, h_, c_):
     # lstm_U.shape (128L, 512L)
     # h_:block上一次的输出
     preact = tensor.dot(h_, tparams[_p(prefix, 'U')])
@@ -22,11 +37,8 @@ def _step(m_, x_, h_, c_):
 
     # c_：上一个cell的状态， 得到的c为cell的输出
     c = f * c_ + i * c
-    # m_: mask
-    # c = m_[:, None] * c + (1. - m_)[:, None] * c_
 
     # h:block的输出
     h = o * tensor.tanh(c)
-    # h = m_[:, None] * h + (1. - m_)[:, None] * h_
 
     return h, c
