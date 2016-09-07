@@ -697,6 +697,8 @@ def train_lstm(
                 x, mask, y = prepare_data(x, y)
                 n_samples += x.shape[1]
 
+
+                print('x.shape:', numpy.asarray(x).shape, '   y.shape:', numpy.asarray(y).shape)
                 # 计算损失函数
                 cost = f_grad_shared(x, mask, y)
                 # 更新权值

@@ -32,6 +32,9 @@ class son(father):
 
 
 if __name__ == '__main__':
+    # rand = np.random.random()
+    # print(rand)
+
     a = np.asarray([1,2])#.astype(config.floatX)
     b = np.asarray([[1,2,3],[4,5,6]])#.astype(config.floatX)
     # a = theano.shared(a)
@@ -41,6 +44,11 @@ if __name__ == '__main__':
     print(c)
     d = tensor.nnet.sigmoid(c).eval()
     print(d)
+
+    c = np.asarray([1, 2, 3])
+    d = np.asarray([4, 5, 6])
+    e = tensor.dot(c, d).eval()
+    print(e)
 
     # f = father()
     # print(f.name)

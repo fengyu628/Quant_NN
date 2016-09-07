@@ -14,13 +14,16 @@ z = x * 0.1
 n = np.random.random(n_dot) / 10
 # print(n)
 # 添加随机噪声
-result = y + z + n
+result = y + z# + n
 
 # 保存数组
-np.savetxt('data\\sin.txt', [result, z])
+data_save = zip(result, z)
+# print(data_save)
+np.savetxt('data\\sin.txt', data_save)
 # 提取数组
-a, b = np.loadtxt('data\\sin.txt')
-print(a, b)
+data_load = np.loadtxt('data\\sin.txt')
+print(data_load.shape)
+print(len(data_load))
 
 # 画图
 # 纵坐标最大值
