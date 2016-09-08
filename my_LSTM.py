@@ -7,32 +7,32 @@ from theano import config
 
 input_dim = 2
 inner_units = 100
+lr = 0.001
+epoch = 100
 
 data = np.loadtxt('data\\sin.txt')
 n_steps = len(data)
 print('n_steps:', n_steps)
 
-# 生成权值矩阵，shape为[input_dim, inner_units]
-def make_matrix_InputDim_InnerUnits():
-    randn = np.random.rand(input_dim, inner_units)
-    W = (0.01 * randn).astype(config.floatX)
-    W = theano.shared(W)
-    return W
 
-# 生成权值矩阵，shape为[inner_units, inner_units]
-def make_matrix_InnerUnits_InnerUnits():
-    randn = np.random.rand(inner_units, inner_units)
-    R = (0.01 * randn).astype(config.floatX)
-    R = theano.shared(R)
-    return R
 
-# 生成权值向量，shape为[inner_units,]
-def make_vector_InnerUnits():
-    randn = np.random.random(inner_units)
-    b = (0.01 * randn).astype(config.floatX)
-    b = theano.shared(b)
-    return b
+# 生成随机权值矩阵
+def make_random_matrix_with_shape(dim1, dim2):
+    randn = np.random.rand(dim1, dim2)
+    m = (0.01 * randn).astype(config.floatX)
+    m = theano.shared(m)
+    return m
 
+
+# 生成随机权值向量
+def make_random_vector_with_shape(dim1):
+    randn = np.random.random(dim1)
+    v = (0.01 * randn).astype(config.floatX)
+    v = theano.shared(v)
+    return v
+
+
+# 生成随机标量
 def make_scalar():
     rand = np.random.random()
     s = (0.01 * rand)#.astype(config.floatX)
@@ -41,26 +41,27 @@ def make_scalar():
 
 
 # 生成权值
-W_i = make_matrix_InputDim_InnerUnits()
-W_o = make_matrix_InputDim_InnerUnits()
-W_f = make_matrix_InputDim_InnerUnits()
-W_z = make_matrix_InputDim_InnerUnits()
+print('make weight')
+W_i = make_random_matrix_with_shape(input_dim, inner_units)
+W_o = make_random_matrix_with_shape(input_dim, inner_units)
+W_f = make_random_matrix_with_shape(input_dim, inner_units)
+W_z = make_random_matrix_with_shape(input_dim, inner_units)
 
-R_i = make_matrix_InnerUnits_InnerUnits()
-R_o = make_matrix_InnerUnits_InnerUnits()
-R_f = make_matrix_InnerUnits_InnerUnits()
-R_z = make_matrix_InnerUnits_InnerUnits()
+R_i = make_random_matrix_with_shape(inner_units, inner_units)
+R_o = make_random_matrix_with_shape(inner_units, inner_units)
+R_f = make_random_matrix_with_shape(inner_units, inner_units)
+R_z = make_random_matrix_with_shape(inner_units, inner_units)
 
-b_i = make_vector_InnerUnits()
-b_o = make_vector_InnerUnits()
-b_f = make_vector_InnerUnits()
-b_z = make_vector_InnerUnits()
+b_i = make_random_vector_with_shape(inner_units)
+b_o = make_random_vector_with_shape(inner_units)
+b_f = make_random_vector_with_shape(inner_units)
+b_z = make_random_vector_with_shape(inner_units)
 
-p_i = make_vector_InnerUnits()
-p_o = make_vector_InnerUnits()
-p_f = make_vector_InnerUnits()
+p_i = make_random_vector_with_shape(inner_units)
+p_o = make_random_vector_with_shape(inner_units)
+p_f = make_random_vector_with_shape(inner_units)
 
-U_y = make_vector_InnerUnits()
+U_y = make_random_vector_with_shape(inner_units)
 b_y = make_scalar()
 
 
@@ -92,9 +93,9 @@ def _step(x, h_, c_):
 
     return h, c
 
-scan_sequences_input = tensor.matrix(name='scan_input')
+x_symbol = tensor.matrix(name='scan_input')
 scan_out, scan_updates = theano.scan(_step,
-                            sequences=[scan_sequences_input],
+                            sequences=[x_symbol],
                             outputs_info=[tensor.alloc(np.asarray([0.], dtype=config.floatX),
                                                        # n_samples,
                                                        inner_units),
@@ -107,13 +108,67 @@ scan_out, scan_updates = theano.scan(_step,
 # scan_out[0]为block的输出h
 # print(np.asarray(scan_out[0]).shape)
 # U*y + b ， 最终的输出
-out_y = tensor.dot(scan_out[0], U_y) + b_y
+y_out_symbol = tensor.dot(scan_out[0], U_y) + b_y
 # out_softmax = tensor.nnet.softmax(tensor.dot(scan_out[0], U_y) + b_y)
 # 制作输出函数
-f_out = theano.function([scan_sequences_input], out_y, name='f_out')
+f_out = theano.function([x_symbol], y_out_symbol,
+                        name='f_out')
 
-a = f_out(data)
-print(np.asarray(a).shape)
-print(a)
+# a = f_out(data)
+# print(np.asarray(a).shape)
+# print(a)
 
-cost = np.square(out_y - y)
+# 目标值
+y_target_symbol = tensor.scalar(name='y')
+
+cost_symbol = np.square(y_out_symbol - y_target_symbol).mean()
+
+# 计算梯度
+# weights_list = [W_i, W_o, W_f, W_z, R_i, R_o, R_f, R_z, b_i, b_o, b_f, b_z, p_i, p_o, p_f, U_y, b_y]
+weights_list = [W_i, W_o, W_f, W_z, R_i, R_o, R_f, R_z, b_i, b_o, b_f, b_z, U_y, b_y]
+
+grads = tensor.grad(cost_symbol, wrt=weights_list)
+
+grads_shared = [theano.shared(p.get_value() * 0.) for  p in weights_list]
+grads_update = [(gs, g) for gs, g in zip(grads_shared, grads)]
+# 制作损失函数
+print('make cost function')
+function_cost = theano.function([x_symbol, y_target_symbol], cost_symbol,
+                                updates=grads_update,
+                                name='sgd_f_grad_shared')
+
+# 学习率
+lr_symbol = tensor.scalar(name='learning rate')
+weights_update = [(p, p - lr_symbol * g) for p, g in zip(weights_list, grads_shared)]
+# 制作权值更新函数
+print('make update function')
+function_update = theano.function([lr_symbol], [],
+                                  updates=weights_update,
+                                  name='sgd_f_update')
+
+x_length = 20
+train_x_list = []
+train_y_list = []
+train_list_length = 0
+for i in range(len(data) - x_length - 1):
+    train_x_list.append(data[i:i+x_length, ])
+    train_y_list.append(data[i+x_length, 0])
+    train_list_length += 1
+# print(train_x)
+# print(train_y)
+
+for epoch_index in range(epoch):
+    print('epoch: %d' % epoch_index)
+
+    for train_index in range(train_list_length):
+        # print('train_index: ', train_index)
+
+        x = train_x_list[train_index]
+        y = train_y_list[train_index]
+
+        cost = function_cost(x, y)
+        if train_index % 20 == 0:
+            # print('train_index: %d' % train_index)
+            print('cost: %f' % cost)
+
+        function_update(lr)

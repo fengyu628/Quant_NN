@@ -698,10 +698,10 @@ def train_lstm(
                 n_samples += x.shape[1]
 
 
-                print('x.shape:', numpy.asarray(x).shape, '   y.shape:', numpy.asarray(y).shape)
-                # 计算损失函数
+                print('x.shape:', numpy.asarray(x).shape, '  y.shape:', numpy.asarray(y).shape)
+                # 计算损失函数,同时将gshared,更新为grads
                 cost = f_grad_shared(x, mask, y)
-                # 更新权值
+                # 更新权值，同时将tparams.values()更新为 tparams.values() - lr * gshared
                 f_update(lrate)
 
                 # cost不是number，或者cost是infinite，总之就是cost计算错误
