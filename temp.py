@@ -1,7 +1,7 @@
 # coding:utf-8
 
 import numpy as np
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import theano
 import theano.tensor as tensor
 from theano import config
@@ -32,9 +32,38 @@ class son(father):
 
 
 if __name__ == '__main__':
+
+    n = 5
+    a = np.random.rand(n, n)
+    # print(a)
+    a_f = a.flatten()
+    # print(a_f)
+
+    plt.figure(figsize=(9, 6))
+    # n = 10
+    # rand 均匀分布和 randn高斯分布
+    # x = np.random.randn(1, n)
+    # y = np.random.randn(1, n)
+    # print(x)
+    # print(y)
+    # x = np.arange(25)
+    x = [1,2,3,4,5,1,2,3,4,5,1,2,3,4,5,1,2,3,4,5,1,2,3,4,5]
+    y = [1,1,1,1,1,2,2,2,2,2,3,3,3,3,3,4,4,4,4,4,5,5,5,5,5]
+    color = np.arange(25)
+    print(color)
+    # y = np.arange(25)
+    # print(x)
+    # T = np.arctan2(x, y)
+    # print(T)
+    plt.scatter(x, y, c=color, s=1000, alpha=0.4, marker='o', linewidths=1)
+    # T:散点的颜色
+    # s：散点的大小
+    # alpha:是透明程度
+    plt.show()
+
     # rand = np.random.random()
     # print(rand)
-
+'''
     a = np.asarray([1,2])#.astype(config.floatX)
     b = np.asarray([[1,2,3],[4,5,6]])#.astype(config.floatX)
     # a = theano.shared(a)
@@ -49,7 +78,7 @@ if __name__ == '__main__':
     d = np.asarray([4, 5, 6])
     e = tensor.dot(c, d).eval()
     print(e)
-
+'''
     # f = father()
     # print(f.name)
     # s = son()
