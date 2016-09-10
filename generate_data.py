@@ -19,7 +19,7 @@ result = y + z + n
 # 保存数组
 data_save = zip(result, z)
 # print(data_save)
-np.savetxt('data\\sin2.txt', data_save)
+np.savetxt('data\\sin.txt', data_save)
 # 提取数组
 # data_load = np.loadtxt('data\\sin.txt')
 # print(data_load.shape)

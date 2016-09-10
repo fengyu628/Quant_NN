@@ -4,9 +4,10 @@ import numpy as np
 import theano
 import theano.tensor as tensor
 from theano import config
+import time
 
 input_dim = 2
-inner_units = 5
+inner_units = 500
 learning_rate = 0.001
 epoch = 100
 
@@ -219,7 +220,7 @@ x_valid_lise, y_valid_list, valid_list_length = slice_data(data_valid, x_length)
 # 开始训练
 for epoch_index in range(epoch):
     print('========== epoch: %d ==========' % epoch_index)
-
+    t = time.time()
     for train_index in range(train_list_length):
         # print('train_index: ', train_index)
 
@@ -228,15 +229,16 @@ for epoch_index in range(epoch):
 
         # 计算目标函数
         loss = function_compute_loss(x_train, y_train)
-        # if train_index % 20 == 0:
-        #     print('loss: %f' % loss)
+        if train_index % 20 == 0:
+            print('loss: %f' % loss)
 
         # 更新权值
         function_update_weights(learning_rate)
 
     # 计算验证误差
-    err = error_valid(x_valid_lise, y_valid_list, valid_list_length, function_layer_output, loss_variance)
-    print('valid error: %f' % err)
+    # err = error_valid(x_valid_lise, y_valid_list, valid_list_length, function_layer_output, loss_variance)
+    # print('valid error: %f' % err)
+    print('time use: %f' % (time.time() - t))
 
 # 保存训练完的权值
 np.savez(file_weights_saved, weights_list)

@@ -33,6 +33,11 @@ class son(father):
 
 if __name__ == '__main__':
 
+
+    a = [[i]*5 for i in range(5)]
+    a = np.asarray(a).flatten()
+    # print(a)
+
     n = 5
     a = np.random.rand(n, n)
     # print(a)
@@ -40,26 +45,30 @@ if __name__ == '__main__':
     # print(a_f)
 
     plt.figure(figsize=(9, 6))
-    # n = 10
+    n = 10
     # rand 均匀分布和 randn高斯分布
     # x = np.random.randn(1, n)
     # y = np.random.randn(1, n)
     # print(x)
     # print(y)
     # x = np.arange(25)
-    x = [1,2,3,4,5,1,2,3,4,5,1,2,3,4,5,1,2,3,4,5,1,2,3,4,5]
-    y = [1,1,1,1,1,2,2,2,2,2,3,3,3,3,3,4,4,4,4,4,5,5,5,5,5]
-    color = np.arange(25)
-    print(color)
+    x =  np.asarray([i for i in range(n)] * n) * 0.1
+    y = np.asarray([[i]*n for i in range(n)]).flatten() * 0.1
+    color = range(n**2)
+    # color.shape = (5, 5)
+    # print(color)
     # y = np.arange(25)
     # print(x)
     # T = np.arctan2(x, y)
     # print(T)
-    plt.scatter(x, y, c=color, s=1000, alpha=0.4, marker='o', linewidths=1)
+    plt.scatter(x, y, c=color, s=1000, alpha=0.4, marker='s', linewidths=1)
     # T:散点的颜色
     # s：散点的大小
     # alpha:是透明程度
     plt.show()
+
+    color = color.reverse()
+    print(color)
 
     # rand = np.random.random()
     # print(rand)
