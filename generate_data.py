@@ -2,12 +2,13 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+from theano import config
 
 n_dot = 200
 # 生成函数自变量数组
 x = np.linspace(0, 20, n_dot)
 # 计算正弦函数值
-y = np.sin(x) * 10.
+y = (np.sin(x) * 10.).astype(config.floatX)
 # 线性函数
 z = x * 0.1
 # 随机噪声
