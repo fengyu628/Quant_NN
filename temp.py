@@ -6,6 +6,7 @@ import theano
 import theano.tensor as tensor
 from theano import config
 
+
 class father(object):
     def __init__(self):
         self.name = 'Father'
@@ -31,8 +32,12 @@ class son(father):
         print('son build')
 
 
-if __name__ == '__main__':
 
+if __name__ == "__main__":
+
+    x = np.linspace(0, 5 * np.pi, 400)
+    print(x)
+    exit(6)
 
     a = [[i]*5 for i in range(5)]
     a = np.asarray(a).flatten()
@@ -67,8 +72,10 @@ if __name__ == '__main__':
     # alpha:是透明程度
     plt.show()
 
-    color = color.reverse()
+    color = range(n**2, 0, -1)
     print(color)
+    plt.scatter(x, y, c=color, s=1000, alpha=0.4, marker='s', linewidths=1)
+    plt.show()
 
     # rand = np.random.random()
     # print(rand)
