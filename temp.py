@@ -6,6 +6,12 @@ import theano
 import theano.tensor as tensor
 from theano import config
 
+from PyQt4.QtCore import *
+from PyQt4.QtGui import *
+from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as figureCanvas
+from matplotlib.figure import Figure
+import sys
+
 
 class father(object):
     def __init__(self):
@@ -32,9 +38,32 @@ class son(father):
         print('son build')
 
 
+class Example1(QWidget):
+    def __init__(self, parent=None):
+        super(Example1, self).__init__(parent)
+        # 返回当前的figure
+        figure = plt.gcf()
+        self.canvas = figureCanvas(figure)
+        x = [1, 2, 3]
+        y = [4, 5, 6]
+        plt.plot(x, y)
+        plt.title('Example')
+        plt.xlabel('x')
+        plt.ylabel('y')
+        self.canvas.draw()
+        layout = QHBoxLayout(self)
+        layout.addWidget(self.canvas)
+
 
 if __name__ == "__main__":
 
+    if __name__ == '__main__':
+        app = QApplication(sys.argv)
+        ui = Example1()
+        ui.show()
+        app.exec_()
+
+'''
     x = np.linspace(0, 5 * np.pi, 400)
     print(x)
     exit(6)
@@ -76,7 +105,7 @@ if __name__ == "__main__":
     print(color)
     plt.scatter(x, y, c=color, s=1000, alpha=0.4, marker='s', linewidths=1)
     plt.show()
-
+'''
     # rand = np.random.random()
     # print(rand)
 '''
