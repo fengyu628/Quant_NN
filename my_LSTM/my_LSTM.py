@@ -13,29 +13,16 @@ from my_loss import loss_variance
 
 class MyRNNModel(object):
 
-    def __init__(self, layer_type=LSTM, input_dim=2, inner_units=10):
+    def __init__(self, layer_type=LSTM, input_dim=2, inner_units=20):
         super(MyRNNModel, self).__init__()
         # self.layer_type = layer_type
         self.input_dim = input_dim
         self.inner_units = inner_units
         self.layer = layer_type(input_dim, inner_units)
         self.weights_list = self.layer.get_weight_list()
-
-# lstm_layer, weights_list = build_rnn_model(LSTM, input_dim, inner_units)
-
-# lstm_layer = LSTM(input_dim, inner_units)
-# weights_list = lstm_layer.get_weight_list()
-
-# import matplotlib.pyplot as plt
-# weight_show = weights_list[4].get_value()
-# print(weight_show)
-# n = inner_units
-# x =  np.asarray([i for i in range(n)] * n) * 0.1
-# y = np.asarray([[i]*n for i in range(n)]).flatten() * 0.1
-# plt.figure(figsize=(9, 6))
-# plt.scatter(x, y, c=weight_show, s=1000, alpha=0.4, marker='s', linewidths=1)
-# plt.show()
-# exit(5)
+        self.callback = None
+        self.callback_interval = 0.
+        self.time = time.time()
 
     # 制作layer输出函数
     @staticmethod
@@ -72,8 +59,11 @@ class MyRNNModel(object):
     def set_callback_weight_updated(self, callback):
         self.callback = callback
 
+    def set_callback_interval(self, t):
+        self.callback_interval = t
+
     # 训练模型
-    def train(self, optimizer=sgd, loss=loss_variance, learning_rate=0.001, epoch=10):
+    def train(self, optimizer=sgd, loss=loss_variance, learning_rate=0.001, epoch=100):
 
         file_train_data = '..\\data\\sin.txt'
         file_valid_data = '..\\data\\sin2.txt'
@@ -97,7 +87,7 @@ class MyRNNModel(object):
             print('========== epoch: %d ==========' % epoch_index)
             t = time.time()
             for train_index in range(train_list_length):
-                # print('train_index: ', train_index)
+                print('train_index: %d' % train_index)
 
                 x_train = x_train_list[train_index]
                 y_train = y_train_list[train_index]
@@ -106,33 +96,32 @@ class MyRNNModel(object):
                 loss = function_compute_loss(x_train, y_train)
                 if train_index % 20 == 0:
                     print('loss: %f' % loss)
+                    # if self.callback:
+                    #     self.callback(self.weights_list)
 
                 # 更新权值
                 function_update_weights(learning_rate)
+                if self.callback and self.callback_interval != 0. \
+                        and (time.time() - self.time) > (self.callback_interval + 0.1):
+                    print(self.callback_interval)
+                    print('show....................')
+                    self.time = time.time()
+                    self.callback_interval = 0.
+                    self.callback(self.weights_list)
 
             # 计算验证误差
             err = self.error_valid(x_valid_lise, y_valid_list, valid_list_length, function_layer_output, loss_variance)
             print('valid error: %f' % err)
             print('time use: %f' % (time.time() - t))
-            if self.callback:
-                self.callback(self.weights_list)
 
         # 保存训练完的权值
         np.savez(file_weights_saved, self.weights_list)
         print('weights saved')
 
-
-
-
 # ======================================================================================================================
 # ======================================================================================================================
 
 if __name__ == '__main__':
-
-
-
-    # n_steps = len(data_train)
-    # print('n_steps: %d' % n_steps)
 
     # model = MyRNNModel(layer_type=LSTM, input_dim=2, inner_units=20)
     # model.train(optimizer=sgd, loss=loss_variance, learning_rate=0.001, epoch=100)
