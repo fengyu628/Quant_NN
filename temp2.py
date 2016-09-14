@@ -1,64 +1,30 @@
 # coding:utf-8
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
-import PyQt4.QtCore as QtCore
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
-import PyQt4.QtGui as QtGui
-from numpy import random
 import sys
-import matplotlib.pyplot as plt
-import numpy as np
+from time import time
+from PyQt4.QtCore import *
 
 
-class MplCanvas(FigureCanvas):
-    """
-    Creates a canvas on which to draw our widgets
-    """
+class A(QObject):
     def __init__(self):
-        # self.fig = Figure()
-        self.fig = plt.gcf()
-        # self.ax = self.fig.add_subplot(111)
-        FigureCanvas.__init__(self, self.fig)
-        # FigureCanvas.setSizePolicy(self, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
-        # FigureCanvas.updateGeometry(self)
+        QObject.__init__(self)
 
-class Example1(QWidget):
-    def __init__(self,parent=None):
-        super(Example1,self).__init__(parent)
-        # 返回当前的figure
-        # figure = plt.gcf()
-        self.canvas = MplCanvas()
-        n = 10
-        x = np.asarray([i for i in range(n)] * n) * 0.1
-        y = np.asarray([[i] * n for i in range(n)]).flatten() * 0.1
-        # color = range(n ** 2)
-        color = np.random.random(n ** 2)
-        plt.scatter(x, y, c=color, s=1000, alpha=0.4, marker='s', linewidths=1)
-        self.canvas.draw()
-        self.button = QtGui.QPushButton('Button', self)
-        layout = QVBoxLayout(self)
-        layout.addWidget(self.canvas)
-        layout.addWidget(self.button)
+    # 定义一个发射信号的方法，i为信号所带的参数
+    def afunc(self, i):
+        self.emit(SIGNAL("doSomePrinting(int)"), i)
 
-        self.connect(self.button, QtCore.SIGNAL('clicked()'), self, QtCore.SLOT("change()"))
+        # 这里是对应信号'doSomePrinting(int)'的槽处理函数，i为来自信号的参数
 
-    @QtCore.pyqtSlot()
-    def change(self):
-        print('change')
-        self.canvas.fig.clear()
-        n = 10
-        x = np.asarray([i for i in range(n)] * n) * 0.1
-        y = np.asarray([[i] * n for i in range(n)]).flatten() * 0.1
-        # color = range(n ** 2)
-        color = np.random.random(n ** 2)
-        plt.scatter(x, y, c=color, s=1000, alpha=0.4, marker='s', linewidths=1)
-        self.canvas.draw()
+    def bfunc(self, i):
+        print "Hello World!", i
+        sys.exit()
 
 
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    ui = Example1()
-    ui.show()
-    app.exec_()
+if __name__ == "__main__":
+    app = QCoreApplication(sys.argv)
+    a = A()
+    # 将信号和槽连接
+    QObject.connect(a, SIGNAL("doSomePrinting(int)"), a.bfunc)
+    # 调用信号发射函数
+    a.afunc(10)
+    sys.exit(app.exec_())

@@ -12,7 +12,9 @@ from my_loss import loss_variance
 
 
 class MyRNNModel(object):
-
+    """
+    递归网络模型类
+    """
     def __init__(self, layer_type=LSTM, input_dim=2, inner_units=20):
         super(MyRNNModel, self).__init__()
         # self.layer_type = layer_type
@@ -21,8 +23,7 @@ class MyRNNModel(object):
         self.layer = layer_type(input_dim, inner_units)
         self.weights_list = self.layer.get_weight_list()
         self.callback = None
-        self.callback_interval = 0.
-        self.time = time.time()
+        self.callback_enable = True
 
     # 制作layer输出函数
     @staticmethod
@@ -56,11 +57,13 @@ class MyRNNModel(object):
         error /= float(list_length)
         return error
 
-    def set_callback_weight_updated(self, callback):
+    # 设置回调函数，在权值更新的调用
+    def set_callback_when_weight_updated(self, callback):
         self.callback = callback
 
-    def set_callback_interval(self, t):
-        self.callback_interval = t
+    # 设置回调函数使能
+    def set_callback_enable(self, bool_value):
+        self.callback_enable = bool_value
 
     # 训练模型
     def train(self, optimizer=sgd, loss=loss_variance, learning_rate=0.001, epoch=100):
@@ -101,12 +104,8 @@ class MyRNNModel(object):
 
                 # 更新权值
                 function_update_weights(learning_rate)
-                if self.callback and self.callback_interval != 0. \
-                        and (time.time() - self.time) > (self.callback_interval + 0.1):
-                    print(self.callback_interval)
+                if self.callback and self.callback_enable is True:
                     print('show....................')
-                    self.time = time.time()
-                    self.callback_interval = 0.
                     self.callback(self.weights_list)
 
             # 计算验证误差

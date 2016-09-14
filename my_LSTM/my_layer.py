@@ -7,26 +7,26 @@ from theano import config
 
 
 # 生成随机权值矩阵
-def make_random_matrix_with_shape(dim1, dim2):
+def make_random_matrix_with_shape(dim1, dim2, name=None):
     randn = np.random.rand(dim1, dim2)
     m = (0.01 * randn).astype(config.floatX)
-    m = theano.shared(m)
+    m = theano.shared(m, name=name)
     return m
 
 
 # 生成随机权值向量
-def make_random_vector_with_shape(dim1):
+def make_random_vector_with_shape(dim1, name=None):
     randn = np.random.random(dim1)
     v = (0.01 * randn).astype(config.floatX)
-    v = theano.shared(v)
+    v = theano.shared(v, name=name)
     return v
 
 
 # 生成随机标量
-def make_scalar():
+def make_scalar(name=None):
     rand = np.random.random()
     s = (0.01 * rand)
-    s = theano.shared(s)
+    s = theano.shared(s, name=name)
     return s
 
 
@@ -40,27 +40,27 @@ class LSTM(object):
         self.inner_units = inner_units
         # 生成权值
         print('make weight')
-        self.W_i = make_random_matrix_with_shape(input_dim, inner_units)
-        self.W_o = make_random_matrix_with_shape(input_dim, inner_units)
-        self.W_f = make_random_matrix_with_shape(input_dim, inner_units)
-        self.W_z = make_random_matrix_with_shape(input_dim, inner_units)
+        self.W_i = make_random_matrix_with_shape(input_dim, inner_units, name='InputGate Input Weight')
+        self.W_o = make_random_matrix_with_shape(input_dim, inner_units, name='OutputGate Input Weight')
+        self.W_f = make_random_matrix_with_shape(input_dim, inner_units, name='ForgetGate Input Weight')
+        self.W_z = make_random_matrix_with_shape(input_dim, inner_units, name='BlockInput Input Weight')
 
-        self.R_i = make_random_matrix_with_shape(inner_units, inner_units)
-        self.R_o = make_random_matrix_with_shape(inner_units, inner_units)
-        self.R_f = make_random_matrix_with_shape(inner_units, inner_units)
-        self.R_z = make_random_matrix_with_shape(inner_units, inner_units)
+        self.R_i = make_random_matrix_with_shape(inner_units, inner_units, name='InputGate Recurrent Weight')
+        self.R_o = make_random_matrix_with_shape(inner_units, inner_units, name='OutputGate Recurrent Weight')
+        self.R_f = make_random_matrix_with_shape(inner_units, inner_units, name='ForgetGate Recurrent Weight')
+        self.R_z = make_random_matrix_with_shape(inner_units, inner_units, name='BlockInput Recurrent Weight')
 
-        self.b_i = make_random_vector_with_shape(inner_units)
-        self.b_o = make_random_vector_with_shape(inner_units)
-        self.b_f = make_random_vector_with_shape(inner_units)
-        self.b_z = make_random_vector_with_shape(inner_units)
+        self.b_i = make_random_vector_with_shape(inner_units, name='InputGate Bias')
+        self.b_o = make_random_vector_with_shape(inner_units, name='OutputGate Bias')
+        self.b_f = make_random_vector_with_shape(inner_units, name='ForgetGate Bias')
+        self.b_z = make_random_vector_with_shape(inner_units, name='BlockInput Bias')
 
         # self.p_i = make_random_vector_with_shape(inner_units)
         # self.p_o = make_random_vector_with_shape(inner_units)
         # self.p_f = make_random_vector_with_shape(inner_units)
 
-        self.U_y = make_random_vector_with_shape(inner_units)
-        self.b_y = make_scalar()
+        self.U_y = make_random_vector_with_shape(inner_units, name='BlockOutput Weight')
+        self.b_y = make_scalar(name='BlockOutput Bias')
 
         # self.weights_list = [self.W_i, self.W_o, self.W_f, self.W_z,
         #                      self.R_i, self.R_o, self.R_f, self.R_z,
