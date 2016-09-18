@@ -1,8 +1,9 @@
 # coding:utf-8
 
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+from matplotlib.ticker import  MultipleLocator
 from PyQt4 import QtGui
 from PyQt4 import QtCore
 import numpy as np
@@ -38,17 +39,27 @@ class MplCanvas(FigureCanvas):
     创建自己的画布
     """
     def __init__(self, weight_shape):
+        print(len(weight_shape))
         # 计算画布的尺寸
-        size = (float(weight_shape[1])/4 + 2, float(weight_shape[0])/4 + 2)
-        print(size)
-        self.fig = Figure(figsize=size)
+        scalar_factor = 5
+        bias_factor = 0.
+        if len(weight_shape) == 2:
+            size = (float(weight_shape[1])/scalar_factor + bias_factor,
+                    float(weight_shape[0])/scalar_factor + bias_factor)
+        # weight为一维向量
+        else:
+            size = (float(weight_shape[0])/scalar_factor + bias_factor,
+                   1.0 / scalar_factor + bias_factor)
+        print('size: %s' % str(size))
+        self.fig = Figure(figsize=size, dpi=100)
+        # self.fig = Figure()
         # self.fig = plt.gcf()
         # self.axes = plt.gca()
-        self.p1 = self.fig.add_subplot(111)
-        self.p1.spines['right'].set_color('none')
-        self.p1.spines['top'].set_color('none')
-        self.p1.spines['bottom'].set_color('none')
-        self.p1.spines['left'].set_color('none')
+        self.ax = self.fig.add_subplot(111)
+        self.ax.spines['right'].set_color('none')
+        self.ax.spines['top'].set_color('none')
+        self.ax.spines['bottom'].set_color('none')
+        self.ax.spines['left'].set_color('none')
 
         # self.subplot = plt.subplot()
         # self.ax = self.fig.add_subplot(111)
@@ -74,21 +85,49 @@ class Chart(QtGui.QWidget):
         self.weight_index = weight_index
         self.weight_shape = weight_shape
 
+        # self.setGeometry(QtCore.QRect(130, 80, 250, 30))
+
+        # scalar_factor = 20
+        # bias_factor = 150
+        # if len(weight_shape) == 2:
+        #     x_size = int(weight_shape[1]) * scalar_factor + bias_factor
+        #     y_size = int(weight_shape[0]) * scalar_factor + bias_factor
+        # # weight为一维向量
+        # else:
+        #     x_size = int(weight_shape[0]) * scalar_factor + bias_factor
+        #     y_size = int(bias_factor)
+        # print('x size:%d, y size:%d' % (x_size,y_size))
+        # self.setFixedSize(x_size, y_size)
+
     def show_weight(self, weight_t):
         weight = weight_t.get_value()
         # 计算权值矩阵的尺寸
-        y_length = weight.shape[0]
-        x_length = weight.shape[1]
+        if len(weight.shape) == 2:
+            y_length = weight.shape[0]
+            x_length = weight.shape[1]
+        else:
+            y_length = 1
+            x_length = weight.shape[0]
         # x == [1,2,3,4,...,1,2,3,4...]
         x = np.asarray([i for i in range(x_length)] * y_length) * 0.1
         # y == [1,1,1,1,...,4,4,4,4,...]
         y = np.asarray([[i] * x_length for i in range(y_length)]).flatten() * 0.1
-        self.canvas.p1.clear()
-        self.canvas.p1.set_xticks([])
-        self.canvas.p1.set_yticks([])
-        self.canvas.p1.set_title(weight_t.name, fontsize=14)
-        self.canvas.p1.set_xlabel("min:%f   max:%f" % (weight.min(), weight.max()), fontsize=14)
-        self.canvas.p1.scatter(x, y, c=weight, s=200, alpha=0.4, marker='s', linewidths=1)
+        self.canvas.ax.clear()
+        # 不显示坐标
+        # self.canvas.ax.set_xticks([])
+        # self.canvas.ax.set_yticks([])
+        # 设置刻度大小
+        xmajorLocator = MultipleLocator(0.1)
+        ymajorLocator = MultipleLocator(0.1)
+        self.canvas.ax.xaxis.set_major_locator(xmajorLocator)
+        self.canvas.ax.yaxis.set_major_locator(ymajorLocator)
+        # 设置坐标范围
+        self.canvas.ax.set_xlim(-0.05, x_length*0.1 - 0.05)
+        self.canvas.ax.set_ylim(-0.05, y_length*0.1 - 0.05)
+        # 设置标题
+        self.canvas.ax.set_title(weight_t.name, fontsize=14)
+        self.canvas.ax.set_xlabel("min:%f   max:%f" % (weight.min(), weight.max()), fontsize=14)
+        self.canvas.ax.scatter(x, y, c=weight, s=200, alpha=0.4, marker='s', linewidths=1)
         self.canvas.draw()
 
 
@@ -203,7 +242,7 @@ class MainWindow(QtGui.QMainWindow):
             # weight_button = QtGui.QAction('&%s' % name, self)
             weight_button = MenuButton('&%s' % weight.name, self)
             weight_button.set_index(i)
-            # weight_button.triggered.connect(lambda: self.show_weight())
+            # 此处用了两个信号，是为了解决自带信号 triggered() 不能带参数的问题
             self.connect(weight_button, QtCore.SIGNAL('triggered()'), weight_button.emit_f)
             self.connect(weight_button, QtCore.SIGNAL('emitWeightIndex(int)'), self.show_chart)
             weightMenu.addAction(weight_button)

@@ -1,30 +1,27 @@
 # coding:utf-8
 
-import sys
-from time import time
-from PyQt4.QtCore import *
+import cv2.cv as cv
+# import cv2
+import numpy as np
+
+np_gray = np.random.rand(10, 10)
+# print(np_gray)
 
 
-class A(QObject):
-    def __init__(self):
-        QObject.__init__(self)
+image_cvmat = cv.fromarray(np_gray)
+# print(image_cvmat)
 
-    # 定义一个发射信号的方法，i为信号所带的参数
-    def afunc(self, i):
-        self.emit(SIGNAL("doSomePrinting(int)"), i)
+# image = cv.CreateImage((100, 100), 8, 1)
+image = cv.GetImage(image_cvmat)
+print(image)
+# image_np = np.asarray(image_color)
+# print(image_np)
+# cv.CvtColor(image_gray, image_color, cv.CV_GRAY2BGR)
 
-        # 这里是对应信号'doSomePrinting(int)'的槽处理函数，i为来自信号的参数
+image_final = cv.CreateImage((500, 500), 8, 1)
+print(image_final)
 
-    def bfunc(self, i):
-        print "Hello World!", i
-        sys.exit()
+cv.Resize(image, image_final)
 
-
-if __name__ == "__main__":
-    app = QCoreApplication(sys.argv)
-    a = A()
-    # 将信号和槽连接
-    QObject.connect(a, SIGNAL("doSomePrinting(int)"), a.bfunc)
-    # 调用信号发射函数
-    a.afunc(10)
-    sys.exit(app.exec_())
+cv.ShowImage("Focus", image)
+cv.WaitKey(0)
