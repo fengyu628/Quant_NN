@@ -9,6 +9,7 @@ from PyQt4 import QtCore
 import numpy as np
 import sys
 import time
+import cv2.cv as cv
 
 from my_Model import MyRNNModel
 
@@ -33,7 +34,7 @@ class TrainThread(QtCore.QThread):
         self.model.set_callback_when_weight_updated(self.weights_updated_signal.emit)
         self.model.train()
 
-
+'''
 class MplCanvas(FigureCanvas):
     """
     创建自己的画布
@@ -68,7 +69,7 @@ class MplCanvas(FigureCanvas):
         # super(MplCanvas, self).__init__(self.axes)
         # FigureCanvas.setSizePolicy(self, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
         # FigureCanvas.updateGeometry(self)
-
+'''
 
 class Chart(QtGui.QWidget):
     """
@@ -78,12 +79,22 @@ class Chart(QtGui.QWidget):
         super(Chart, self).__init__(parent)
 
         # 返回当前的figure
-        self.canvas = MplCanvas(weight_shape)
-        layout = QtGui.QVBoxLayout(self)
-        layout.addWidget(self.canvas)
+        # self.canvas = MplCanvas(weight_shape)
+        # layout = QtGui.QVBoxLayout(self)
+        # layout.addWidget(self.canvas)
 
         self.weight_index = weight_index
         self.weight_shape = weight_shape
+
+        self.piclabel = QtGui.QLabel('pic')
+        self.btn = QtGui.QPushButton(_fromUtf8('更新'), self)
+        self.btn.setGeometry(QtCore.QRect(215, 190, 80, 26))
+        self.connect(self.btn, QtCore.SIGNAL('clicked()'), self.show_weight)
+        vbox = QtGui.QVBoxLayout()
+        vbox.addWidget(self.piclabel)
+        vbox.addWidget(self.btn)
+        self.setLayout(vbox)
+        # self.show_weight()
 
         # self.setGeometry(QtCore.QRect(130, 80, 250, 30))
 
@@ -100,7 +111,25 @@ class Chart(QtGui.QWidget):
         # self.setFixedSize(x_size, y_size)
 
     def show_weight(self, weight_t):
-        weight = weight_t.get_value()
+        weight = np.asarray(weight_t.get_value())
+        # print(weight.min(), weight.max())
+        weight_to_show = weight - weight.min()
+        scalar_factor = 255 / (weight.max() - weight.min())
+
+        array_float64 = (weight_to_show * scalar_factor) // 1
+        print(array_float64.min(), array_float64.max())
+        array_uint8 = array_float64.astype(np.uint8)
+        image_cvmat = cv.fromarray(array_uint8)
+        image = cv.GetImage(image_cvmat)
+        image_final = cv.CreateImage((220, 100), 8, 1)
+        cv.Resize(image, image_final, interpolation=0)
+        w, h = cv.GetSize(image_final)
+        # self.image._imgData = image_final.tostring()
+        self.image = QtGui.QImage(image_final.tostring(), w, h, QtGui.QImage.Format_Indexed8)
+        pixmap = QtGui.QPixmap.fromImage(self.image)
+        self.piclabel.setPixmap(pixmap)
+
+        '''
         # 计算权值矩阵的尺寸
         if len(weight.shape) == 2:
             y_length = weight.shape[0]
@@ -129,7 +158,7 @@ class Chart(QtGui.QWidget):
         self.canvas.ax.set_xlabel("min:%f   max:%f" % (weight.min(), weight.max()), fontsize=14)
         self.canvas.ax.scatter(x, y, c=weight, s=200, alpha=0.4, marker='s', linewidths=1)
         self.canvas.draw()
-
+        '''
 
 class MenuButton(QtGui.QAction):
     """
