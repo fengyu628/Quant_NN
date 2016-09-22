@@ -59,6 +59,9 @@ class MainWindow(QtGui.QMainWindow):
 
         # 初始化菜单栏
         self.init_menu_bar(self.model.weights_list)
+
+        self.init_paras_labels()
+
         # 初始化状态栏
         self.statusBar()
 
@@ -134,3 +137,7 @@ class MainWindow(QtGui.QMainWindow):
             self.connect(weight_button, QtCore.SIGNAL('emitWeightIndex(int)'), self.show_chart)
             weightMenu.addAction(weight_button)
             i += 1
+
+    def init_paras_labels(self):
+        for key, value in self.model.local_paras.items():
+            print(key, value)

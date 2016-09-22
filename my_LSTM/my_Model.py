@@ -15,12 +15,25 @@ class MyRNNModel(object):
     """
     递归网络模型类
     """
-    def __init__(self, layer_type=LSTM, input_dim=2, inner_units=20):
+    def __init__(self,
+                 layer_type=LSTM,
+                 input_dim=2,
+                 inner_units=20,
+                 optimizer=sgd,
+                 loss=loss_variance,
+                 learning_rate=0.001,
+                 epoch=100
+                 ):
         super(MyRNNModel, self).__init__()
-        # self.layer_type = layer_type
         self.input_dim = input_dim
         self.inner_units = inner_units
         self.layer = layer_type(input_dim, inner_units)
+        self.optimizer = optimizer
+        self.loss = loss
+        self.learning_rate = learning_rate
+        self.epoch = epoch
+        self.local_paras = locals()
+
         self.weights_list = self.layer.get_weight_list()
         self.callback = None
         self.callback_enable = True
@@ -66,7 +79,7 @@ class MyRNNModel(object):
         self.callback_enable = bool_value
 
     # 训练模型
-    def train(self, optimizer=sgd, loss=loss_variance, learning_rate=0.001, epoch=100):
+    def train(self):
 
         file_train_data = '..\\data\\sin.txt'
         file_valid_data = '..\\data\\sin2.txt'
@@ -78,7 +91,7 @@ class MyRNNModel(object):
         # 生成layer输出函数
         function_layer_output = self.make_function_layer_output(self.layer)
         # 生成损失计算函数和权值更新函数
-        function_compute_loss, function_update_weights = optimizer(self.layer, loss, self.weights_list)
+        function_compute_loss, function_update_weights = self.optimizer(self.layer, self.loss, self.weights_list)
 
         # 生成测试数据
         x_length = 20
@@ -86,7 +99,7 @@ class MyRNNModel(object):
         x_valid_lise, y_valid_list, valid_list_length = self.slice_data(data_valid, x_length)
 
         # 开始训练
-        for epoch_index in range(epoch):
+        for epoch_index in range(self.epoch):
             print('========== epoch: %d ==========' % epoch_index)
             t = time.time()
             for train_index in range(train_list_length):
@@ -103,7 +116,7 @@ class MyRNNModel(object):
                     #     self.callback(self.weights_list)
 
                 # 更新权值
-                function_update_weights(learning_rate)
+                function_update_weights(self.learning_rate)
                 if self.callback and self.callback_enable is True:
                     print('show....................')
                     self.callback(self.weights_list)
