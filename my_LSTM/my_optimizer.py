@@ -5,7 +5,7 @@ import theano.tensor as tensor
 
 
 # 随机梯度下降
-def sgd(layer, loss_function, weights_list):
+def optimizer_sgd(layer, loss_function, weights_list):
 
     x_symbol = tensor.matrix(name='scan_input')
     y_out_symbol = layer(x_symbol)
@@ -35,3 +35,6 @@ def sgd(layer, loss_function, weights_list):
                                name='sgd_f_update')
 
     return f_loss, f_update
+
+def optimizer_other():
+    pass

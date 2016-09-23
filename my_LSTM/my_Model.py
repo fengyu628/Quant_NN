@@ -1,13 +1,13 @@
 # coding:utf-8
 
-import numpy as np
-import theano
-import theano.tensor as tensor
-from theano import config
+# import numpy as np
+# import theano
+# import theano.tensor as tensor
+# from theano import config
 import time
 
-from my_layer import LSTM
-from my_optimizer import sgd
+from my_layer import *
+from my_optimizer import *
 from my_loss import loss_variance
 
 
@@ -16,10 +16,10 @@ class MyRNNModel(object):
     递归网络模型类
     """
     def __init__(self,
-                 layer_type=LSTM,
+                 layer_type=Layer_LSTM,
                  input_dim=2,
                  inner_units=20,
-                 optimizer=sgd,
+                 optimizer=optimizer_sgd,
                  loss=loss_variance,
                  learning_rate=0.001,
                  epoch=100
@@ -27,16 +27,22 @@ class MyRNNModel(object):
         super(MyRNNModel, self).__init__()
         self.input_dim = input_dim
         self.inner_units = inner_units
-        self.layer = layer_type(input_dim, inner_units)
+        self.layer_type = layer_type
+        self.layer = None
+        self.weights_list = []
         self.optimizer = optimizer
         self.loss = loss
         self.learning_rate = learning_rate
         self.epoch = epoch
-        self.local_paras = locals()
+        # self.local_paras = locals()
 
-        self.weights_list = self.layer.get_weight_list()
         self.callback = None
         self.callback_enable = True
+
+    # 生成模型实体，以及权值
+    def build_layer(self):
+        self.layer = self.layer_type(self.input_dim, self.inner_units)
+        self.weights_list = self.layer.get_weight_list()
 
     # 制作layer输出函数
     @staticmethod

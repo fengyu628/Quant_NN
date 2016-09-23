@@ -8,95 +8,45 @@ from PyQt4.QtCore import *
 import sys
 _fromUtf8 = QString.fromUtf8
 
-# np_gray = (np.random.rand(10, 20) * 255) // 1
-# print(np_gray)
-# # np_gray = np.int_(np_gray)
-# # np_gray = np.float_(np_gray)
-# gray = np_gray.astype(np.uint8)
-# print(gray.dtype)
-# print(gray)
-#
-# # exit(8)
-#
-# image_cvmat = cv.fromarray(gray)
-# # print(image_cvmat)
-#
-# # image = cv.CreateImage((100, 100), 8, 1)
-# image = cv.GetImage(image_cvmat)
-# print(image)
-# # image_np = np.asarray(image_color)
-# # print(image_np)
-# # cv.CvtColor(image_gray, image_color, cv.CV_GRAY2BGR)
-#
-# image_final = cv.CreateImage((220, 100), 8, 1)
-# print(image_final)
-#
-# cv.Resize(image, image_final, interpolation=0)
-#
-# # cv.ShowImage("Focus", image_final)
-# # cv.WaitKey(0)
+from PyQt4.QtCore import Qt
 
-# class OpenCVQImage(QImage):
-#     def __init__(self, opencv_bgr_img):
-#         depth, n_channels = opencv_bgr_img.depth, opencv_bgr_img.nChannels
-#         if depth != cv.IPL_DEPTH_8U or n_channels != 1:
-#             raise ValueError("the input image must be 8-bit, 1-channel")
-#         w, h = cv.GetSize(opencv_bgr_img)
-#         opencv_rgb_img = cv.CreateImage((w, h), depth, 3)
-#         # it's assumed the image is in BGR format
-#         cv.CvtColor(opencv_bgr_img, opencv_rgb_img, cv.CV_GRAY2RGB)
-#         self._imgData = opencv_bgr_img.tostring()
-#         super(OpenCVQImage, self).__init__(self._imgData, w, h,
-#                                            QImage.Format_RGB888)
-
-class Chart(QWidget):
-    def __init__(self, parent=None):
-        super(Chart, self).__init__(parent)
-        # w, h = cv.GetSize(image_final)
-        # self.image = QImage(image_final.tostring(), w, h, QImage.Format_Indexed8)
-        # self.image = QImage()
-
-        self.setFixedSize(500, 300)
-
-        self.piclabel = QLabel('pic')
-        self.btn = QPushButton(_fromUtf8('更新'), self)
-        self.btn.setGeometry(QRect(215, 190, 80, 26))
-        self.connect(self.btn, SIGNAL('clicked()'), self.change)
-        vbox = QVBoxLayout()
-        vbox.addWidget(self.piclabel)
-        vbox.addWidget(self.btn)
-        self.setLayout(vbox)
-        self.change()
-
-        # self.image._imgData = image_final.tostring()
-        # pixmap = QPixmap.fromImage(self.image)
-        # self.piclabel.setPixmap(pixmap)
-        # self.show()
-
-    @pyqtSlot()
-    def change(self):
-        np_gray = (np.random.rand(10, 20) * 255) // 1
-        gray = np_gray.astype(np.uint8)
-        image_cvmat = cv.fromarray(gray)
-        image = cv.GetImage(image_cvmat)
-        image_final = cv.CreateImage((220, 100), 8, 1)
-        cv.Resize(image, image_final, interpolation=0)
-        w, h = cv.GetSize(image_final)
-        # self.image._imgData = image_final.tostring()
-        self.image = QImage(image_final.tostring(), w, h, QImage.Format_Indexed8)
-        pixmap = QPixmap.fromImage(self.image)
-        self.piclabel.setPixmap(pixmap)
-
-    # def paintEvent(self, e):
-    #     painter = QtGui.QPainter(self)
-    #     painter.drawImage(QtCore.QPoint(0, 0), OpenCVQImage(image_final))
-
-
-
-
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    ui = Chart()
-    ui.show()
-    # ui.update()
-    sys.exit(app.exec_())
+# -*- coding: utf-8 -*-
+"""第一个程序"""
+#from PyQt5 import QtWidgets
+# from PyQt4.QtWidgets import *
+from PyQt4.QtGui import QColor
+import sys
+class myDialog(QDialog):
+    """docstring for myDialog"""
+    def __init__(self, arg=None):
+        super(myDialog, self).__init__(arg)
+        self.setWindowTitle("first window")
+        self.resize(400,100);
+        addbtn=QPushButton(_fromUtf8('添加'))
+        delbtn=QPushButton(_fromUtf8('清空'))
+        conLayout = QHBoxLayout()
+        self.sexComboBox=QComboBox()
+        self.sexComboBox.insertItem(0,_fromUtf8("男"))
+        # self.sexComboBox.insertItem(0,self.tr("Man"))
+        self.sexComboBox.insertItem(1,_fromUtf8("女"))
+        conLayout.addWidget(self.sexComboBox)
+        conLayout.addWidget(addbtn)
+        conLayout.addWidget(delbtn)
+        self.setLayout(conLayout)
+        self.sexComboBox.currentIndexChanged.connect(self.comboxchange)
+        addbtn.clicked.connect(self.additem)
+        delbtn.clicked.connect(self.clearComboBox)
+    def clearComboBox(self):
+        #清空组合框
+        self.sexComboBox.clear()
+    def additem(self):
+        #添加文本
+        self.sexComboBox.addItem(_fromUtf8('测试数据'))
+    def comboxchange(self):
+        QMessageBox.warning(self,_fromUtf8("警告"),str(self.sexComboBox.currentIndex())+self.tr(':')+self.sexComboBox.currentText(),QMessageBox.Yes)
+app = QApplication(sys.argv)
+#全局设置QPushButton的背景样式
+dlg = myDialog()
+dlg.show()
+dlg.exec_()
+app.exit()

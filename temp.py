@@ -12,56 +12,61 @@ from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as figureCanvas
 from matplotlib.figure import Figure
 import sys
 
-
-class father(object):
-    def __init__(self):
-        self.name = 'Father'
-
-    def __call__(self):
-        print('father call')
-        self.build()
-        print(self.name)
-
-    def build(self):
-        print('father build')
+from my_LSTM import my_loss
+print(dir(my_loss))
+for i in dir(my_loss):
+    print(type(i))
 
 
-class son(father):
-    def __init__(self):
-        super(son, self).__init__()
-        self.name = 'Son'
+# class father(object):
+#     def __init__(self):
+#         self.name = 'Father'
+#
+#     def __call__(self):
+#         print('father call')
+#         self.build()
+#         print(self.name)
+#
+#     def build(self):
+#         print('father build')
+#
+#
+# class son(father):
+#     def __init__(self):
+#         super(son, self).__init__()
+#         self.name = 'Son'
+#
+#     def call(self):
+#         print('son call')
+#
+#     def build(self):
+#         print('son build')
+#
+#
+# class Example1(QWidget):
+#     def __init__(self, parent=None):
+#         super(Example1, self).__init__(parent)
+#         # 返回当前的figure
+#         figure = plt.gcf()
+#         self.canvas = figureCanvas(figure)
+#         x = [1, 2, 3]
+#         y = [4, 5, 6]
+#         plt.plot(x, y)
+#         plt.title('Example')
+#         plt.xlabel('x')
+#         plt.ylabel('y')
+#         self.canvas.draw()
+#         layout = QHBoxLayout(self)
+#         layout.addWidget(self.canvas)
 
-    def call(self):
-        print('son call')
 
-    def build(self):
-        print('son build')
-
-
-class Example1(QWidget):
-    def __init__(self, parent=None):
-        super(Example1, self).__init__(parent)
-        # 返回当前的figure
-        figure = plt.gcf()
-        self.canvas = figureCanvas(figure)
-        x = [1, 2, 3]
-        y = [4, 5, 6]
-        plt.plot(x, y)
-        plt.title('Example')
-        plt.xlabel('x')
-        plt.ylabel('y')
-        self.canvas.draw()
-        layout = QHBoxLayout(self)
-        layout.addWidget(self.canvas)
-
-
-if __name__ == "__main__":
-
-    if __name__ == '__main__':
-        app = QApplication(sys.argv)
-        ui = Example1()
-        ui.show()
-        app.exec_()
+# if __name__ == "__main__":
+#
+#     if __name__ == '__main__':
+#         app = QApplication(sys.argv)
+#         ui = Example1()
+#         ui.show()
+#         app.exec_()
 
 '''
     x = np.linspace(0, 5 * np.pi, 400)

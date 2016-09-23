@@ -30,10 +30,7 @@ def make_scalar(name=None):
     return s
 
 
-# ======================================================================================================================
-# ======================================================================================================================
-
-class LSTM(object):
+class Layer_LSTM(object):
 
     def __init__(self, input_dim, inner_units):
         self.input_dim = input_dim
@@ -123,3 +120,12 @@ class LSTM(object):
         layer_output = tensor.dot(scan_out[0][-1], self.U_y) + self.b_y
         # out_softmax = tensor.nnet.softmax(tensor.dot(scan_out[0][-1], U_y) + b_y)
         return layer_output
+
+
+class Layer_GRU(object):
+
+    def __init__(self):
+        pass
+
+lstm = Layer_LSTM
+gru = Layer_GRU
