@@ -37,7 +37,8 @@ class MenuButton(QtGui.QAction):
 
     # 发射带有权值序号的信号
     def emit_f(self):
-        self.emit(QtCore.SIGNAL('emitWeightIndex(int)'), self.index)
+        self.emit(QtCore.SIGNAL('clickMenuButtonWithWeightIndex(int)'), self.index)
+        self.setDisabled(True)
 
 
 class MainWindow(QtGui.QMainWindow):
@@ -49,16 +50,6 @@ class MainWindow(QtGui.QMainWindow):
 
         self.setFixedSize(500, 300)
         self.setWindowTitle('Model')
-        #
-        # self.user = QtGui.QLineEdit(self)
-        # self.user.setGeometry(QtCore.QRect(130, 80, 250, 30))
-
-        self.buildButton = QtGui.QPushButton('Build', self)
-        self.connect(self.buildButton, QtCore.SIGNAL('clicked()'), self.build_model)
-
-        self.trainButton = QtGui.QPushButton('Train', self)
-        self.connect(self.trainButton, QtCore.SIGNAL('clicked()'), self.train_model)
-
 
         # 创建模型
         self.model = model()
@@ -77,9 +68,11 @@ class MainWindow(QtGui.QMainWindow):
 
         # 初始化 “Weight” 菜单
         self.weightMenu = menu_bar.addMenu('Weights')
+        self.weightMenu.setDisabled(True)
+        self.weightMenuItems = []
 
         # 初始化控件
-        self.layerLabel = QtGui.QLabel('Layer:')
+        self.layerLabel = QtGui.QLabel('Layer Type:')
         self.layerLabel.setAlignment(QtCore.Qt.AlignRight)
         self.layerComboBox = QtGui.QComboBox()
 
@@ -95,13 +88,27 @@ class MainWindow(QtGui.QMainWindow):
         self.innerUnitsEdit = QtGui.QLineEdit(self)
         self.innerUnitsEdit.setText(str(self.model.inner_units))
 
-        self.lossLabel = QtGui.QLabel('Loss:')
+        self.lossLabel = QtGui.QLabel('Loss Function:')
         self.lossLabel.setAlignment(QtCore.Qt.AlignRight)
         self.lossComboBox = QtGui.QComboBox()
 
-        self.optimizerLabel = QtGui.QLabel('Optimizer:')
+        self.optimizerLabel = QtGui.QLabel('Optimizer Function:')
         self.optimizerLabel.setAlignment(QtCore.Qt.AlignRight)
         self.optimizerComboBox = QtGui.QComboBox()
+
+        self.buildButton = QtGui.QPushButton('Build', self)
+        self.connect(self.buildButton, QtCore.SIGNAL('clicked()'), self.build_model)
+
+        self.trainButton = QtGui.QPushButton('Train', self)
+        self.trainButton.setDisabled(True)
+        self.connect(self.trainButton, QtCore.SIGNAL('clicked()'), self.train_model)
+
+        self.stopTrainButton = QtGui.QPushButton('Stop Train', self)
+        self.stopTrainButton.setDisabled(True)
+        self.connect(self.stopTrainButton, QtCore.SIGNAL('clicked()'), self.stop_train)
+
+        self.closeAllChartsButton = QtGui.QPushButton('Close All Weight Charts', self)
+        self.connect(self.closeAllChartsButton, QtCore.SIGNAL('clicked()'), self.close_all_charts)
 
         self.init_paras_labels()
 
@@ -128,6 +135,8 @@ class MainWindow(QtGui.QMainWindow):
         grid.addWidget(self.optimizerComboBox, 4, 1)
         grid.addWidget(self.buildButton, 5, 0)
         grid.addWidget(self.trainButton, 5, 1)
+        grid.addWidget(self.stopTrainButton, 6, 0)
+        grid.addWidget(self.closeAllChartsButton, 6, 1)
 
         self.main_widget = QtGui.QWidget()
         self.main_widget.setLayout(grid)
@@ -145,8 +154,6 @@ class MainWindow(QtGui.QMainWindow):
         self.trainThread = TrainThread(self.model)
         # 连接子进程的信号和槽函数， 发射信号时所调用的函数
         self.trainThread.weights_updated_signal.connect(self.show_weight_in_charts)
-
-        # self.show()
 
     # 生成模型
     @QtCore.pyqtSlot()
@@ -167,7 +174,10 @@ class MainWindow(QtGui.QMainWindow):
 
         self.model.build_layer()
         # 生成权值菜单
+        self.weightMenu.setDisabled(False)
         self.init_weight_menu(self.model.weights_list)
+        # 使能训练按钮
+        self.trainButton.setDisabled(False)
 
     # 训练模型
     @QtCore.pyqtSlot()
@@ -176,6 +186,13 @@ class MainWindow(QtGui.QMainWindow):
         self.trainButton.setDisabled(True)
         # 开始执行 run() 函数里的内容
         self.trainThread.start()
+        # 使能停止训练按钮
+        self.stopTrainButton.setDisabled(False)
+
+    # 停止训练模型
+    @QtCore.pyqtSlot()
+    def stop_train(self):
+        self.model.stop_trainning()
 
     # 生成图表，并显示相应的权值
     @QtCore.pyqtSlot()
@@ -184,21 +201,35 @@ class MainWindow(QtGui.QMainWindow):
         # weight_shape = self.model.weights_list[weight_index].get_value().shape
         # print(weight_shape)
         chart = Chart(self.model.weights_list[weight_index], weight_index)
+        self.connect(chart, QtCore.SIGNAL('closeChartWithWeightIndex(int)'), self.close_chart_event)
         self.charts.append(chart)
         chart.show_weight(self.model.weights_list[weight_index])
         chart.show()
+
+    # 有 Chart 被关闭的事件处理
+    @QtCore.pyqtSlot()
+    def close_chart_event(self, weight_index):
+        print('chart weight index: %d' % weight_index)
+        for chart in self.charts:
+            if chart.weight_index == weight_index:
+                self.charts.remove(chart)
+                # 恢复权值菜单元素的使能
+                for item in self.weightMenuItems:
+                    if item.index == weight_index:
+                        item.setDisabled(False)
+        print('charts count:%d' % len(self.charts))
+
+    # 关闭所有 Chart
+    @QtCore.pyqtSlot()
+    def close_all_charts(self):
+        self.charts = []
+        for item in self.weightMenuItems:
+            item.setDisabled(False)
 
     # 改变模型的 layer
     @QtCore.pyqtSlot()
     def layer_combobox_changed(self):
         self.model.layer_type = getattr(my_layer, str(self.layerComboBox.currentText()))
-
-    # 改变模型的 layer
-    # @QtCore.pyqtSlot()
-    # def inputdim_edit_changed(self):
-    #     # print(self.inputDimEdit.text())
-    #     self.model.input_dim = int(self.inputDimEdit.text())
-    #     print(self.model.input_dim)
 
     # 改变模型的 loss
     @QtCore.pyqtSlot()
@@ -228,35 +259,34 @@ class MainWindow(QtGui.QMainWindow):
 
     # 初始化菜单栏
     def init_weight_menu(self, weight_list):
-        i = 0
-        for weight in weight_list:
-            # name = copy.deepcopy(weight.name)
-            # self.names.append(name)
-            # weight_button = QtGui.QAction('&%s' % name, self)
+        for weight_index, weight in enumerate(weight_list):
             weight_button = MenuButton('&%s' % weight.name, self)
-            weight_button.set_index(i)
+            weight_button.set_index(weight_index)
             # 此处用了两个信号，是为了解决自带信号 triggered() 不能带参数的问题
             self.connect(weight_button, QtCore.SIGNAL('triggered()'), weight_button.emit_f)
-            self.connect(weight_button, QtCore.SIGNAL('emitWeightIndex(int)'), self.show_chart)
+            self.connect(weight_button, QtCore.SIGNAL('clickMenuButtonWithWeightIndex(int)'), self.show_chart)
             self.weightMenu.addAction(weight_button)
-            i += 1
+            # 引用是为了后面恢复使能
+            self.weightMenuItems.append(weight_button)
 
     def init_paras_labels(self):
-
         for item in dir(my_layer):
             # print(item)
             if str(item).startswith('Layer_'):
                 self.layerComboBox.insertItem(0, item)
+        # 遍历的顺序为倒序，所以每次都插入到第一个
         self.layerComboBox.setCurrentIndex(0)
 
         for item in dir(my_loss):
             # print(item)
             if str(item).startswith('loss_'):
                 self.lossComboBox.insertItem(0, item)
+        # 遍历的顺序为倒序，所以每次都插入到第一个
         self.lossComboBox.setCurrentIndex(0)
 
         for item in dir(my_optimizer):
             # print(item)
             if str(item).startswith('optimizer_'):
                 self.optimizerComboBox.insertItem(0, item)
+        # 遍历的顺序为倒序，所以每次都插入到第一个
         self.optimizerComboBox.setCurrentIndex(0)

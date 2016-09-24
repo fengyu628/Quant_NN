@@ -107,20 +107,20 @@ class Chart(QtGui.QWidget):
         # weight 为权值矩阵
         if len(self.weight_shape) == 2:
             x_size = int(self.weight_shape[1]) * self.image_scalar_factor + self.x_gap
-            y_size = int(self.weight_shape[0]) * self.image_scalar_factor + self.y_gap
             # 设置最大窗口宽度
             if x_size > self.max_width:
                 x_size = self.max_width
-                self.image_scalar_factor = (self.max_width - self.x_gap) / self.weight_shape[1]
-                y_size = int(self.weight_shape[0]) * self.image_scalar_factor + self.y_gap
+                self.image_scalar_factor = float(self.max_width - self.x_gap) / self.weight_shape[1]
+                print(self.image_scalar_factor)
+            y_size = int(self.weight_shape[0]) * self.image_scalar_factor + self.y_gap
         # weight 为权值向量
         elif len(self.weight_shape) == 1:
             x_size = int(self.weight_shape[0]) * self.image_scalar_factor + self.x_gap
-            y_size = 1 * self.image_scalar_factor + self.y_gap
             # 设置最大窗口宽度
             if x_size > self.max_width:
                 x_size = self.max_width
-                self.image_scalar_factor = (self.max_width - self.x_gap) / self.weight_shape[0]
+                self.image_scalar_factor = float(self.max_width - self.x_gap) / self.weight_shape[0]
+            y_size = 1 * self.image_scalar_factor + self.y_gap
         # weight 为权值标量
         else:
             x_size = 1 * self.image_scalar_factor + self.x_gap
@@ -176,8 +176,8 @@ class Chart(QtGui.QWidget):
         image = cv.GetImage(image_cvmat)
         # 得到图片的宽和高
         # w, h = cv.GetSize(image)
-        w_show = w * self.image_scalar_factor
-        h_show = h * self.image_scalar_factor
+        w_show = int(w * self.image_scalar_factor)
+        h_show = int(h * self.image_scalar_factor)
         # 创建最终的图片，用于缩放之后的显示
         image_final = cv.CreateImage((w_show, h_show), 8, 1)
         # 缩放
@@ -199,6 +199,7 @@ class Chart(QtGui.QWidget):
 
     def closeEvent(self, e):
         print('close %s' % self.weight_name)
+        self.emit(QtCore.SIGNAL('closeChartWithWeightIndex(int)'), self.weight_index)
         super(Chart, self).closeEvent(e)
 
         '''

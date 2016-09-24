@@ -39,6 +39,8 @@ class MyRNNModel(object):
         self.callback = None
         self.callback_enable = True
 
+        self.stop_train_flag = False
+
     # 生成模型实体，以及权值
     def build_layer(self):
         self.layer = self.layer_type(self.input_dim, self.inner_units)
@@ -84,6 +86,9 @@ class MyRNNModel(object):
     def set_callback_enable(self, bool_value):
         self.callback_enable = bool_value
 
+    def stop_trainning(self):
+        self.stop_train_flag = True
+
     # 训练模型
     def train(self):
 
@@ -109,6 +114,9 @@ class MyRNNModel(object):
             print('========== epoch: %d ==========' % epoch_index)
             t = time.time()
             for train_index in range(train_list_length):
+                if self.stop_train_flag is True:
+                    print('Stop train')
+                    return
                 print('train_index: %d' % train_index)
 
                 x_train = x_train_list[train_index]
