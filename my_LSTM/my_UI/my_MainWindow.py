@@ -88,13 +88,23 @@ class MainWindow(QtGui.QMainWindow):
         self.innerUnitsEdit = QtGui.QLineEdit(self)
         self.innerUnitsEdit.setText(str(self.model.inner_units))
 
-        self.lossLabel = QtGui.QLabel('Loss Function:')
-        self.lossLabel.setAlignment(QtCore.Qt.AlignRight)
+        self.lossFunctionLabel = QtGui.QLabel('Loss Function:')
+        self.lossFunctionLabel.setAlignment(QtCore.Qt.AlignRight)
         self.lossComboBox = QtGui.QComboBox()
 
         self.optimizerLabel = QtGui.QLabel('Optimizer Function:')
         self.optimizerLabel.setAlignment(QtCore.Qt.AlignRight)
         self.optimizerComboBox = QtGui.QComboBox()
+
+        self.learningRateLabel = QtGui.QLabel('learning Rate:')
+        self.learningRateLabel.setAlignment(QtCore.Qt.AlignRight)
+        self.learningRateEdit = QtGui.QLineEdit(self)
+        self.learningRateEdit.setText(str(self.model.learning_rate))
+
+        self.epochLabel = QtGui.QLabel('Epoch:')
+        self.epochLabel.setAlignment(QtCore.Qt.AlignRight)
+        self.epochEdit = QtGui.QLineEdit(self)
+        self.epochEdit.setText(str(self.model.epoch))
 
         self.buildButton = QtGui.QPushButton('Build', self)
         self.connect(self.buildButton, QtCore.SIGNAL('clicked()'), self.build_model)
@@ -103,12 +113,26 @@ class MainWindow(QtGui.QMainWindow):
         self.trainButton.setDisabled(True)
         self.connect(self.trainButton, QtCore.SIGNAL('clicked()'), self.train_model)
 
+        self.pauseTrainButton = QtGui.QPushButton('Pause Train', self)
+        self.pauseTrainButton.setDisabled(True)
+        self.connect(self.pauseTrainButton, QtCore.SIGNAL('clicked()'), self.pause_train)
+
+        self.resumeTrainButton = QtGui.QPushButton('Resume Train', self)
+        self.resumeTrainButton.setDisabled(True)
+        self.connect(self.resumeTrainButton, QtCore.SIGNAL('clicked()'), self.resume_train)
+
         self.stopTrainButton = QtGui.QPushButton('Stop Train', self)
         self.stopTrainButton.setDisabled(True)
         self.connect(self.stopTrainButton, QtCore.SIGNAL('clicked()'), self.stop_train)
 
         self.closeAllChartsButton = QtGui.QPushButton('Close All Weight Charts', self)
         self.connect(self.closeAllChartsButton, QtCore.SIGNAL('clicked()'), self.close_all_charts)
+        
+        self.lossResultLabel = QtGui.QLabel('Loss:')
+        self.lossResultLabel.setAlignment(QtCore.Qt.AlignLeft)
+
+        self.errorResultLabel = QtGui.QLabel('Error:')
+        self.errorResultLabel.setAlignment(QtCore.Qt.AlignLeft)
 
         self.init_paras_labels()
 
@@ -129,14 +153,22 @@ class MainWindow(QtGui.QMainWindow):
         grid.addWidget(self.inputDimEdit, 1, 1)
         grid.addWidget(self.innerUnitsLabel, 2, 0)
         grid.addWidget(self.innerUnitsEdit, 2, 1)
-        grid.addWidget(self.lossLabel, 3, 0)
+        grid.addWidget(self.lossFunctionLabel, 3, 0)
         grid.addWidget(self.lossComboBox, 3, 1)
         grid.addWidget(self.optimizerLabel, 4, 0)
         grid.addWidget(self.optimizerComboBox, 4, 1)
-        grid.addWidget(self.buildButton, 5, 0)
-        grid.addWidget(self.trainButton, 5, 1)
-        grid.addWidget(self.stopTrainButton, 6, 0)
-        grid.addWidget(self.closeAllChartsButton, 6, 1)
+        grid.addWidget(self.learningRateLabel, 5, 0)
+        grid.addWidget(self.learningRateEdit, 5, 1)
+        grid.addWidget(self.epochLabel, 6, 0)
+        grid.addWidget(self.epochEdit, 6, 1)
+        grid.addWidget(self.buildButton, 7, 0)
+        grid.addWidget(self.trainButton, 7, 1)
+        grid.addWidget(self.pauseTrainButton, 8, 0)
+        grid.addWidget(self.resumeTrainButton, 8, 1)
+        grid.addWidget(self.stopTrainButton, 9, 0)
+        grid.addWidget(self.closeAllChartsButton, 9, 1)
+        grid.addWidget(self.lossResultLabel, 10, 0)
+        grid.addWidget(self.errorResultLabel, 10, 1)
 
         self.main_widget = QtGui.QWidget()
         self.main_widget.setLayout(grid)
@@ -153,7 +185,7 @@ class MainWindow(QtGui.QMainWindow):
         # 新建线程对象
         self.trainThread = TrainThread(self.model)
         # 连接子进程的信号和槽函数， 发射信号时所调用的函数
-        self.trainThread.weights_updated_signal.connect(self.show_weight_in_charts)
+        self.trainThread.weights_updated_signal.connect(self.deal_with_train_callback)
 
     # 生成模型
     @QtCore.pyqtSlot()
@@ -165,13 +197,41 @@ class MainWindow(QtGui.QMainWindow):
         except Exception as e:
             print('error input_dim')
             print(e)
-        # print(self.model.input_dim)
+            QtGui.QMessageBox.warning(self, 'warning',
+                                      'Input Dim error',
+                                      QtGui.QMessageBox.Cancel)
+            self.buildButton.setDisabled(False)
+            return
         try:
             self.model.inner_units = int(self.innerUnitsEdit.text())
         except Exception as e:
             print('error inner_units')
             print(e)
-
+            QtGui.QMessageBox.warning(self, 'warning',
+                                      'Inner Units error',
+                                      QtGui.QMessageBox.Cancel)
+            self.buildButton.setDisabled(False)
+            return
+        try:
+            self.model.learning_rate = float(self.learningRateEdit.text())
+        except Exception as e:
+            print('error learning_rate')
+            print(e)
+            QtGui.QMessageBox.warning(self, 'warning',
+                                      'Learning Rate error',
+                                      QtGui.QMessageBox.Cancel)
+            self.buildButton.setDisabled(False)
+            return
+        try:
+            self.model.epoch = int(self.epochEdit.text())
+        except Exception as e:
+            print('error epoch')
+            print(e)
+            QtGui.QMessageBox.warning(self, 'warning',
+                                      'Epoch error',
+                                      QtGui.QMessageBox.Cancel)
+            self.buildButton.setDisabled(False)
+            return
         self.model.build_layer()
         # 生成权值菜单
         self.weightMenu.setDisabled(False)
@@ -179,7 +239,7 @@ class MainWindow(QtGui.QMainWindow):
         # 使能训练按钮
         self.trainButton.setDisabled(False)
 
-    # 训练模型
+    # 开始训练模型
     @QtCore.pyqtSlot()
     def train_model(self):
         # 把按钮禁用掉
@@ -187,12 +247,30 @@ class MainWindow(QtGui.QMainWindow):
         # 开始执行 run() 函数里的内容
         self.trainThread.start()
         # 使能停止训练按钮
+        self.pauseTrainButton.setDisabled(False)
         self.stopTrainButton.setDisabled(False)
 
-    # 停止训练模型
+    # 暂停训练
+    @QtCore.pyqtSlot()
+    def pause_train(self):
+        self.model.pause_training()
+        self.pauseTrainButton.setDisabled(True)
+        self.resumeTrainButton.setDisabled(False)
+
+    # 重新开始训练
+    @QtCore.pyqtSlot()
+    def resume_train(self):
+        self.model.resume_training()
+        self.pauseTrainButton.setDisabled(False)
+        self.resumeTrainButton.setDisabled(True)
+
+    # 停止训练
     @QtCore.pyqtSlot()
     def stop_train(self):
-        self.model.stop_trainning()
+        self.model.stop_training()
+        self.pauseTrainButton.setDisabled(True)
+        self.resumeTrainButton.setDisabled(True)
+        self.stopTrainButton.setDisabled(True)
 
     # 生成图表，并显示相应的权值
     @QtCore.pyqtSlot()
@@ -242,14 +320,19 @@ class MainWindow(QtGui.QMainWindow):
         self.model.optimizer = getattr(my_optimizer, str(self.optimizerComboBox.currentText()))
 
     # 处理callback传过来的权值
-    def show_weight_in_charts(self):
+    def deal_with_train_callback(self, callback_dict):
         # 关闭train的callback使能
         self.model.set_callback_enable(False)
         t = time.time()
         # self.canvas.fig.clear()
-
+        # 更新窗口中的权值
         for chart in self.charts:
             chart.show_weight(self.model.weights_list[chart.weight_index])
+
+        if callback_dict.has_key('loss'):
+            self.lossResultLabel.setText('Loss: %f' % callback_dict['loss'])
+        if callback_dict.has_key('error'):
+            self.errorResultLabel.setText('Error: %f' % callback_dict['error'])
 
         print('show chart use time: %f' % (time.time() - t))
         # 打开train的callback使能
@@ -271,21 +354,18 @@ class MainWindow(QtGui.QMainWindow):
 
     def init_paras_labels(self):
         for item in dir(my_layer):
-            # print(item)
             if str(item).startswith('Layer_'):
                 self.layerComboBox.insertItem(0, item)
         # 遍历的顺序为倒序，所以每次都插入到第一个
         self.layerComboBox.setCurrentIndex(0)
 
         for item in dir(my_loss):
-            # print(item)
             if str(item).startswith('loss_'):
                 self.lossComboBox.insertItem(0, item)
         # 遍历的顺序为倒序，所以每次都插入到第一个
         self.lossComboBox.setCurrentIndex(0)
 
         for item in dir(my_optimizer):
-            # print(item)
             if str(item).startswith('optimizer_'):
                 self.optimizerComboBox.insertItem(0, item)
         # 遍历的顺序为倒序，所以每次都插入到第一个

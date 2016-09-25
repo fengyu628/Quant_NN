@@ -39,6 +39,7 @@ class MyRNNModel(object):
         self.callback = None
         self.callback_enable = True
 
+        self.pause_train_flag = False
         self.stop_train_flag = False
 
     # 生成模型实体，以及权值
@@ -86,7 +87,13 @@ class MyRNNModel(object):
     def set_callback_enable(self, bool_value):
         self.callback_enable = bool_value
 
-    def stop_trainning(self):
+    def pause_training(self):
+        self.pause_train_flag = True
+
+    def resume_training(self):
+        self.pause_train_flag = False
+
+    def stop_training(self):
         self.stop_train_flag = True
 
     # 训练模型
@@ -114,9 +121,19 @@ class MyRNNModel(object):
             print('========== epoch: %d ==========' % epoch_index)
             t = time.time()
             for train_index in range(train_list_length):
+                # 根据标志位判断是否停止训练
                 if self.stop_train_flag is True:
-                    print('Stop train')
+                    print('Stop train!')
                     return
+                while True:
+                    # 根据标志位判断是否暂停训练
+                    if self.pause_train_flag is False:
+                        break
+                    # 根据标志位判断是否停止训练
+                    if self.stop_train_flag is True:
+                        print('Stop train!')
+                        return
+                    time.sleep(0.1)
                 print('train_index: %d' % train_index)
 
                 x_train = x_train_list[train_index]
@@ -124,21 +141,28 @@ class MyRNNModel(object):
 
                 # 计算目标函数
                 loss = function_compute_loss(x_train, y_train)
-                if train_index % 20 == 0:
+                if train_index % 1 == 0:
                     print('loss: %f' % loss)
                     # if self.callback:
                     #     self.callback(self.weights_list)
 
                 # 更新权值
                 function_update_weights(self.learning_rate)
+                # 调用回调函数
                 if self.callback and self.callback_enable is True:
-                    print('show....................')
-                    self.callback(self.weights_list)
+                    callback_dict = {'weights_list': self.weights_list, 'loss': loss}
+                    print('call back ....................')
+                    self.callback(callback_dict)
 
             # 计算验证误差
             err = self.error_valid(x_valid_lise, y_valid_list, valid_list_length, function_layer_output, loss_variance)
             print('valid error: %f' % err)
             print('time use: %f' % (time.time() - t))
+            # 调用回调函数
+            if self.callback and self.callback_enable is True:
+                callback_dict = {'error': err}
+                print('call back ....................')
+                self.callback(callback_dict)
 
         # 保存训练完的权值
         np.savez(file_weights_saved, self.weights_list)

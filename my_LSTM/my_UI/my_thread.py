@@ -8,7 +8,8 @@ class TrainThread(QtCore.QThread):
     训练的模型的线程，因为训练时会阻塞主程序，故新起一个线程。
     """
     # 声明一个信号，同时返回一个list，同理什么都能返回啦
-    weights_updated_signal = QtCore.pyqtSignal(list)
+    # weights_updated_signal = QtCore.pyqtSignal(list)
+    weights_updated_signal = QtCore.pyqtSignal(dict)
 
     def __init__(self, model, parent=None):
         super(TrainThread, self).__init__(parent)
