@@ -48,7 +48,8 @@ class MainWindow(QtGui.QMainWindow):
     def __init__(self, model, parent=None):
         super(MainWindow, self).__init__(parent)
 
-        self.setFixedSize(500, 300)
+        # self.setFixedSize(500, 300)
+        self.resize(300,400)
         self.setWindowTitle('Model')
 
         # 创建模型
@@ -73,43 +74,45 @@ class MainWindow(QtGui.QMainWindow):
 
         # 初始化控件
         self.layerLabel = QtGui.QLabel('Layer Type:')
-        self.layerLabel.setAlignment(QtCore.Qt.AlignRight)
+        # self.layerLabel.setAlignment(QtCore.Qt.AlignRight)
         self.layerComboBox = QtGui.QComboBox()
 
         self.inputDimLabel = QtGui.QLabel('Input Dim:')
-        self.inputDimLabel.setAlignment(QtCore.Qt.AlignRight)
+        # self.inputDimLabel.setAlignment(QtCore.Qt.AlignRight)
         self.inputDimEdit = QtGui.QLineEdit(self)
         self.inputDimEdit.setText(str(self.model.input_dim))
         # 暂时不许更改输入维度
         self.inputDimEdit.setReadOnly(True)
 
         self.innerUnitsLabel = QtGui.QLabel('Inner Units:')
-        self.innerUnitsLabel.setAlignment(QtCore.Qt.AlignRight)
+        # self.innerUnitsLabel.setAlignment(QtCore.Qt.AlignRight)
         self.innerUnitsEdit = QtGui.QLineEdit(self)
         self.innerUnitsEdit.setText(str(self.model.inner_units))
 
         self.lossFunctionLabel = QtGui.QLabel('Loss Function:')
-        self.lossFunctionLabel.setAlignment(QtCore.Qt.AlignRight)
+        # self.lossFunctionLabel.setAlignment(QtCore.Qt.AlignRight)
         self.lossComboBox = QtGui.QComboBox()
 
         self.optimizerLabel = QtGui.QLabel('Optimizer Function:')
-        self.optimizerLabel.setAlignment(QtCore.Qt.AlignRight)
+        # self.optimizerLabel.setAlignment(QtCore.Qt.AlignRight)
         self.optimizerComboBox = QtGui.QComboBox()
 
         self.learningRateLabel = QtGui.QLabel('learning Rate:')
-        self.learningRateLabel.setAlignment(QtCore.Qt.AlignRight)
+        # self.learningRateLabel.setAlignment(QtCore.Qt.AlignRight)
         self.learningRateEdit = QtGui.QLineEdit(self)
         self.learningRateEdit.setText(str(self.model.learning_rate))
 
         self.epochLabel = QtGui.QLabel('Epoch:')
-        self.epochLabel.setAlignment(QtCore.Qt.AlignRight)
+        # self.epochLabel.setAlignment(QtCore.Qt.AlignRight)
         self.epochEdit = QtGui.QLineEdit(self)
         self.epochEdit.setText(str(self.model.epoch))
 
-        self.buildButton = QtGui.QPushButton('Build', self)
+        self.buildButton = QtGui.QPushButton('Build Model', self)
+        self.buildButton.setFixedSize(100, 50)
         self.connect(self.buildButton, QtCore.SIGNAL('clicked()'), self.build_model)
 
         self.trainButton = QtGui.QPushButton('Train', self)
+        self.trainButton.setFixedSize(100, 50)
         self.trainButton.setDisabled(True)
         self.connect(self.trainButton, QtCore.SIGNAL('clicked()'), self.train_model)
 
@@ -129,10 +132,10 @@ class MainWindow(QtGui.QMainWindow):
         self.connect(self.closeAllChartsButton, QtCore.SIGNAL('clicked()'), self.close_all_charts)
         
         self.lossResultLabel = QtGui.QLabel('Loss:')
-        self.lossResultLabel.setAlignment(QtCore.Qt.AlignLeft)
+        # self.lossResultLabel.setAlignment(QtCore.Qt.AlignLeft)
 
         self.errorResultLabel = QtGui.QLabel('Error:')
-        self.errorResultLabel.setAlignment(QtCore.Qt.AlignLeft)
+        # self.errorResultLabel.setAlignment(QtCore.Qt.AlignLeft)
 
         self.init_paras_labels()
 
@@ -147,28 +150,28 @@ class MainWindow(QtGui.QMainWindow):
                      self.optimizer_combobox_changed)
 
         grid = QtGui.QGridLayout()
-        grid.addWidget(self.layerLabel, 0, 0)
-        grid.addWidget(self.layerComboBox, 0, 1)
-        grid.addWidget(self.inputDimLabel, 1, 0)
-        grid.addWidget(self.inputDimEdit, 1, 1)
-        grid.addWidget(self.innerUnitsLabel, 2, 0)
-        grid.addWidget(self.innerUnitsEdit, 2, 1)
-        grid.addWidget(self.lossFunctionLabel, 3, 0)
-        grid.addWidget(self.lossComboBox, 3, 1)
-        grid.addWidget(self.optimizerLabel, 4, 0)
-        grid.addWidget(self.optimizerComboBox, 4, 1)
-        grid.addWidget(self.learningRateLabel, 5, 0)
-        grid.addWidget(self.learningRateEdit, 5, 1)
-        grid.addWidget(self.epochLabel, 6, 0)
-        grid.addWidget(self.epochEdit, 6, 1)
-        grid.addWidget(self.buildButton, 7, 0)
-        grid.addWidget(self.trainButton, 7, 1)
-        grid.addWidget(self.pauseTrainButton, 8, 0)
-        grid.addWidget(self.resumeTrainButton, 8, 1)
-        grid.addWidget(self.stopTrainButton, 9, 0)
-        grid.addWidget(self.closeAllChartsButton, 9, 1)
-        grid.addWidget(self.lossResultLabel, 10, 0)
-        grid.addWidget(self.errorResultLabel, 10, 1)
+        grid.addWidget(self.layerLabel, 0, 0, 1, 1, QtCore.Qt.AlignRight)
+        grid.addWidget(self.layerComboBox, 0, 1, 1, 1)
+        grid.addWidget(self.inputDimLabel, 1, 0, 1, 1, QtCore.Qt.AlignRight)
+        grid.addWidget(self.inputDimEdit, 1, 1, 1, 1)
+        grid.addWidget(self.innerUnitsLabel, 2, 0, 1, 1, QtCore.Qt.AlignRight)
+        grid.addWidget(self.innerUnitsEdit, 2, 1, 1, 1)
+        grid.addWidget(self.lossFunctionLabel, 3, 0, 1, 1, QtCore.Qt.AlignRight)
+        grid.addWidget(self.lossComboBox, 3, 1, 1, 1)
+        grid.addWidget(self.optimizerLabel, 4, 0, 1, 1, QtCore.Qt.AlignRight)
+        grid.addWidget(self.optimizerComboBox, 4, 1, 1, 1)
+        grid.addWidget(self.learningRateLabel, 5, 0, 1, 1, QtCore.Qt.AlignRight)
+        grid.addWidget(self.learningRateEdit, 5, 1, 1, 1)
+        grid.addWidget(self.epochLabel, 6, 0, 1, 1, QtCore.Qt.AlignRight)
+        grid.addWidget(self.epochEdit, 6, 1, 1, 1)
+        grid.addWidget(self.buildButton, 7, 0, 1, 1)
+        grid.addWidget(self.trainButton, 7, 1, 1, 1)
+        grid.addWidget(self.pauseTrainButton, 8, 0, 1, 1)
+        grid.addWidget(self.resumeTrainButton, 8, 1, 1, 1)
+        grid.addWidget(self.stopTrainButton, 9, 0, 1, 1)
+        grid.addWidget(self.closeAllChartsButton, 9, 1, 1, 1)
+        grid.addWidget(self.lossResultLabel, 10, 0, 1, 1, QtCore.Qt.AlignLeft)
+        grid.addWidget(self.errorResultLabel, 10, 1, 1, 1, QtCore.Qt.AlignLeft)
 
         self.main_widget = QtGui.QWidget()
         self.main_widget.setLayout(grid)
@@ -198,7 +201,7 @@ class MainWindow(QtGui.QMainWindow):
             print('error input_dim')
             print(e)
             QtGui.QMessageBox.warning(self, 'warning',
-                                      'Input Dim error',
+                                      u'Input Dim 错误',
                                       QtGui.QMessageBox.Cancel)
             self.buildButton.setDisabled(False)
             return
@@ -208,7 +211,7 @@ class MainWindow(QtGui.QMainWindow):
             print('error inner_units')
             print(e)
             QtGui.QMessageBox.warning(self, 'warning',
-                                      'Inner Units error',
+                                      u'Inner Units 错误',
                                       QtGui.QMessageBox.Cancel)
             self.buildButton.setDisabled(False)
             return
@@ -218,7 +221,7 @@ class MainWindow(QtGui.QMainWindow):
             print('error learning_rate')
             print(e)
             QtGui.QMessageBox.warning(self, 'warning',
-                                      'Learning Rate error',
+                                      u'Learning Rate 错误',
                                       QtGui.QMessageBox.Cancel)
             self.buildButton.setDisabled(False)
             return
@@ -228,7 +231,7 @@ class MainWindow(QtGui.QMainWindow):
             print('error epoch')
             print(e)
             QtGui.QMessageBox.warning(self, 'warning',
-                                      'Epoch error',
+                                      u'Epoch 错误',
                                       QtGui.QMessageBox.Cancel)
             self.buildButton.setDisabled(False)
             return
