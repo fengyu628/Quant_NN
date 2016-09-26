@@ -116,6 +116,8 @@ class MyRNNModel(object):
         x_train_list, y_train_list, train_list_length = self.slice_data(data_train, x_length)
         x_valid_lise, y_valid_list, valid_list_length = self.slice_data(data_valid, x_length)
 
+        temp_loss_list = []
+        temp_error_list = []
         # 开始训练
         for epoch_index in range(self.epoch):
             print('========== epoch: %d ==========' % epoch_index)
@@ -148,19 +150,24 @@ class MyRNNModel(object):
 
                 # 更新权值
                 function_update_weights(self.learning_rate)
+                # 发送loss的列表,此处如果不加‘float’，temp_loss_list会变成array(XXXX)
+                temp_loss_list.append(float(loss))
                 # 调用回调函数
                 if self.callback and self.callback_enable is True:
-                    callback_dict = {'weights_list': self.weights_list, 'loss': loss}
+                    callback_dict = {'weights_list': self.weights_list, 'temp_loss_list': temp_loss_list}
                     print('call back ....................')
+                    print(temp_loss_list)
                     self.callback(callback_dict)
+                    temp_loss_list = []
 
             # 计算验证误差
             err = self.error_valid(x_valid_lise, y_valid_list, valid_list_length, function_layer_output, loss_variance)
             print('valid error: %f' % err)
             print('time use: %f' % (time.time() - t))
+            temp_error_list.append(float(err))
             # 调用回调函数
             if self.callback and self.callback_enable is True:
-                callback_dict = {'error': err}
+                callback_dict = {'temp_error_list': temp_error_list}
                 print('call back ....................')
                 self.callback(callback_dict)
 

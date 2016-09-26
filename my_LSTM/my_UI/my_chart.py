@@ -6,44 +6,6 @@ import numpy as np
 import cv2.cv as cv
 
 
-'''
-class MplCanvas(FigureCanvas):
-    """
-    创建自己的画布
-    """
-    def __init__(self, weight_shape):
-        print(len(weight_shape))
-        # 计算画布的尺寸
-        scalar_factor = 5
-        bias_factor = 0.
-        if len(weight_shape) == 2:
-            size = (float(weight_shape[1])/scalar_factor + bias_factor,
-                    float(weight_shape[0])/scalar_factor + bias_factor)
-        # weight为一维向量
-        else:
-            size = (float(weight_shape[0])/scalar_factor + bias_factor,
-                   1.0 / scalar_factor + bias_factor)
-        print('size: %s' % str(size))
-        self.fig = Figure(figsize=size, dpi=100)
-        # self.fig = Figure()
-        # self.fig = plt.gcf()
-        # self.axes = plt.gca()
-        self.ax = self.fig.add_subplot(111)
-        self.ax.spines['right'].set_color('none')
-        self.ax.spines['top'].set_color('none')
-        self.ax.spines['bottom'].set_color('none')
-        self.ax.spines['left'].set_color('none')
-
-        # self.subplot = plt.subplot()
-        # self.ax = self.fig.add_subplot(111)
-        # FigureCanvas.__init__(self, self.fig)
-        super(MplCanvas, self).__init__(self.fig)
-        # super(MplCanvas, self).__init__(self.axes)
-        # FigureCanvas.setSizePolicy(self, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
-        # FigureCanvas.updateGeometry(self)
-'''
-
-
 class Chart(QtGui.QWidget):
     """
     单独的窗口，用来显示一个权值矩阵
@@ -69,11 +31,6 @@ class Chart(QtGui.QWidget):
         """
         super(Chart, self).__init__(parent)
 
-        # 返回当前的figure
-        # self.canvas = MplCanvas(weight_shape)
-        # layout = QtGui.QVBoxLayout(self)
-        # layout.addWidget(self.canvas)
-
         self.weight_name = weight_t.name
         self.weight_index = weight_index
         self.weight_shape = weight_t.get_value().shape
@@ -87,6 +44,7 @@ class Chart(QtGui.QWidget):
 
         self.image_label = QtGui.QLabel('weight_image')
         self.image_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.image = None
 
         self.detail_label = QtGui.QLabel('detail_label')
         self.detail_label.setFont(QtGui.QFont("Calibri", 13))
@@ -201,34 +159,3 @@ class Chart(QtGui.QWidget):
         print('close %s' % self.weight_name)
         self.emit(QtCore.SIGNAL('closeChartWithWeightIndex(int)'), self.weight_index)
         super(Chart, self).closeEvent(e)
-
-        '''
-        # 计算权值矩阵的尺寸
-        if len(weight.shape) == 2:
-            y_length = weight.shape[0]
-            x_length = weight.shape[1]
-        else:
-            y_length = 1
-            x_length = weight.shape[0]
-        # x == [1,2,3,4,...,1,2,3,4...]
-        x = np.asarray([i for i in range(x_length)] * y_length) * 0.1
-        # y == [1,1,1,1,...,4,4,4,4,...]
-        y = np.asarray([[i] * x_length for i in range(y_length)]).flatten() * 0.1
-        self.canvas.ax.clear()
-        # 不显示坐标
-        # self.canvas.ax.set_xticks([])
-        # self.canvas.ax.set_yticks([])
-        # 设置刻度大小
-        xmajorLocator = MultipleLocator(0.1)
-        ymajorLocator = MultipleLocator(0.1)
-        self.canvas.ax.xaxis.set_major_locator(xmajorLocator)
-        self.canvas.ax.yaxis.set_major_locator(ymajorLocator)
-        # 设置坐标范围
-        self.canvas.ax.set_xlim(-0.05, x_length*0.1 - 0.05)
-        self.canvas.ax.set_ylim(-0.05, y_length*0.1 - 0.05)
-        # 设置标题
-        self.canvas.ax.set_title(weight_t.name, fontsize=14)
-        self.canvas.ax.set_xlabel("min:%f   max:%f" % (weight.min(), weight.max()), fontsize=14)
-        self.canvas.ax.scatter(x, y, c=weight, s=200, alpha=0.4, marker='s', linewidths=1)
-        self.canvas.draw()
-        '''

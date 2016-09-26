@@ -21,3 +21,16 @@ class TrainThread(QtCore.QThread):
         # 设置模型训练时的回调函数。回调函数为发射信号，参数是list型式（也就是权值列表）
         self.model.set_callback_when_weight_updated(self.weights_updated_signal.emit)
         self.model.train()
+
+
+class MyGeneralThread(QtCore.QThread):
+
+    def __init__(self, parent=None):
+        super(MyGeneralThread, self).__init__(parent)
+        self.function = None
+
+    def set_thread_function(self, function):
+        self.function = function
+
+    def run(self):
+        self.function()

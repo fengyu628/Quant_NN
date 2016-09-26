@@ -1,18 +1,17 @@
 # coding:utf-8
 
 # import matplotlib.pyplot as plt
-# from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-# from matplotlib.figure import Figure
 # from matplotlib.ticker import  MultipleLocator
 from PyQt4 import QtGui
 from PyQt4 import QtCore
-# import numpy as np
+import numpy as np
 # import sys
 import time
 # import cv2.cv as cv
 
-from my_thread import TrainThread
+from my_thread import TrainThread, MyGeneralThread
 from my_chart import Chart
+from my_mplCanvas import MplCanvas
 
 from my_LSTM import my_layer
 from my_LSTM import my_loss
@@ -49,7 +48,7 @@ class MainWindow(QtGui.QMainWindow):
         super(MainWindow, self).__init__(parent)
 
         # self.setFixedSize(500, 300)
-        self.resize(300,400)
+        self.resize(800,600)
         self.setWindowTitle('Model')
 
         # 创建模型
@@ -74,36 +73,29 @@ class MainWindow(QtGui.QMainWindow):
 
         # 初始化控件
         self.layerLabel = QtGui.QLabel('Layer Type:')
-        # self.layerLabel.setAlignment(QtCore.Qt.AlignRight)
         self.layerComboBox = QtGui.QComboBox()
 
         self.inputDimLabel = QtGui.QLabel('Input Dim:')
-        # self.inputDimLabel.setAlignment(QtCore.Qt.AlignRight)
         self.inputDimEdit = QtGui.QLineEdit(self)
         self.inputDimEdit.setText(str(self.model.input_dim))
         # 暂时不许更改输入维度
         self.inputDimEdit.setReadOnly(True)
 
         self.innerUnitsLabel = QtGui.QLabel('Inner Units:')
-        # self.innerUnitsLabel.setAlignment(QtCore.Qt.AlignRight)
         self.innerUnitsEdit = QtGui.QLineEdit(self)
         self.innerUnitsEdit.setText(str(self.model.inner_units))
 
         self.lossFunctionLabel = QtGui.QLabel('Loss Function:')
-        # self.lossFunctionLabel.setAlignment(QtCore.Qt.AlignRight)
         self.lossComboBox = QtGui.QComboBox()
 
         self.optimizerLabel = QtGui.QLabel('Optimizer Function:')
-        # self.optimizerLabel.setAlignment(QtCore.Qt.AlignRight)
         self.optimizerComboBox = QtGui.QComboBox()
 
         self.learningRateLabel = QtGui.QLabel('learning Rate:')
-        # self.learningRateLabel.setAlignment(QtCore.Qt.AlignRight)
         self.learningRateEdit = QtGui.QLineEdit(self)
         self.learningRateEdit.setText(str(self.model.learning_rate))
 
         self.epochLabel = QtGui.QLabel('Epoch:')
-        # self.epochLabel.setAlignment(QtCore.Qt.AlignRight)
         self.epochEdit = QtGui.QLineEdit(self)
         self.epochEdit.setText(str(self.model.epoch))
 
@@ -117,25 +109,30 @@ class MainWindow(QtGui.QMainWindow):
         self.connect(self.trainButton, QtCore.SIGNAL('clicked()'), self.train_model)
 
         self.pauseTrainButton = QtGui.QPushButton('Pause Train', self)
+        self.pauseTrainButton.setFixedSize(100, 50)
         self.pauseTrainButton.setDisabled(True)
         self.connect(self.pauseTrainButton, QtCore.SIGNAL('clicked()'), self.pause_train)
 
         self.resumeTrainButton = QtGui.QPushButton('Resume Train', self)
+        self.resumeTrainButton.setFixedSize(100, 50)
         self.resumeTrainButton.setDisabled(True)
         self.connect(self.resumeTrainButton, QtCore.SIGNAL('clicked()'), self.resume_train)
 
         self.stopTrainButton = QtGui.QPushButton('Stop Train', self)
+        self.stopTrainButton.setFixedSize(100, 50)
         self.stopTrainButton.setDisabled(True)
         self.connect(self.stopTrainButton, QtCore.SIGNAL('clicked()'), self.stop_train)
 
-        self.closeAllChartsButton = QtGui.QPushButton('Close All Weight Charts', self)
+        self.closeAllChartsButton = QtGui.QPushButton('Close All\nWeight Charts', self)
+        self.closeAllChartsButton.setFixedSize(100, 50)
         self.connect(self.closeAllChartsButton, QtCore.SIGNAL('clicked()'), self.close_all_charts)
         
         self.lossResultLabel = QtGui.QLabel('Loss:')
-        # self.lossResultLabel.setAlignment(QtCore.Qt.AlignLeft)
 
         self.errorResultLabel = QtGui.QLabel('Error:')
-        # self.errorResultLabel.setAlignment(QtCore.Qt.AlignLeft)
+
+        self.lossCanvas = MplCanvas(title='Loss')
+        self.errorCanvas = MplCanvas(title='Error')
 
         self.init_paras_labels()
 
@@ -149,34 +146,58 @@ class MainWindow(QtGui.QMainWindow):
                      QtCore.SIGNAL('currentIndexChanged(int)'),
                      self.optimizer_combobox_changed)
 
-        grid = QtGui.QGridLayout()
-        grid.addWidget(self.layerLabel, 0, 0, 1, 1, QtCore.Qt.AlignRight)
-        grid.addWidget(self.layerComboBox, 0, 1, 1, 1)
-        grid.addWidget(self.inputDimLabel, 1, 0, 1, 1, QtCore.Qt.AlignRight)
-        grid.addWidget(self.inputDimEdit, 1, 1, 1, 1)
-        grid.addWidget(self.innerUnitsLabel, 2, 0, 1, 1, QtCore.Qt.AlignRight)
-        grid.addWidget(self.innerUnitsEdit, 2, 1, 1, 1)
-        grid.addWidget(self.lossFunctionLabel, 3, 0, 1, 1, QtCore.Qt.AlignRight)
-        grid.addWidget(self.lossComboBox, 3, 1, 1, 1)
-        grid.addWidget(self.optimizerLabel, 4, 0, 1, 1, QtCore.Qt.AlignRight)
-        grid.addWidget(self.optimizerComboBox, 4, 1, 1, 1)
-        grid.addWidget(self.learningRateLabel, 5, 0, 1, 1, QtCore.Qt.AlignRight)
-        grid.addWidget(self.learningRateEdit, 5, 1, 1, 1)
-        grid.addWidget(self.epochLabel, 6, 0, 1, 1, QtCore.Qt.AlignRight)
-        grid.addWidget(self.epochEdit, 6, 1, 1, 1)
-        grid.addWidget(self.buildButton, 7, 0, 1, 1)
-        grid.addWidget(self.trainButton, 7, 1, 1, 1)
-        grid.addWidget(self.pauseTrainButton, 8, 0, 1, 1)
-        grid.addWidget(self.resumeTrainButton, 8, 1, 1, 1)
-        grid.addWidget(self.stopTrainButton, 9, 0, 1, 1)
-        grid.addWidget(self.closeAllChartsButton, 9, 1, 1, 1)
-        grid.addWidget(self.lossResultLabel, 10, 0, 1, 1, QtCore.Qt.AlignLeft)
-        grid.addWidget(self.errorResultLabel, 10, 1, 1, 1, QtCore.Qt.AlignLeft)
+        top_left_frame = QtGui.QFrame()
+        top_left_frame.setFrameShape(QtGui.QFrame.StyledPanel)
+        top_left_grid = QtGui.QGridLayout()
+        top_left_frame.setLayout(top_left_grid)
+        top_left_grid.addWidget(self.layerLabel, 0, 0, 1, 1, QtCore.Qt.AlignRight)
+        top_left_grid.addWidget(self.layerComboBox, 0, 1, 1, 1)
+        top_left_grid.addWidget(self.inputDimLabel, 1, 0, 1, 1, QtCore.Qt.AlignRight)
+        top_left_grid.addWidget(self.inputDimEdit, 1, 1, 1, 1)
+        top_left_grid.addWidget(self.innerUnitsLabel, 2, 0, 1, 1, QtCore.Qt.AlignRight)
+        top_left_grid.addWidget(self.innerUnitsEdit, 2, 1, 1, 1)
+        top_left_grid.addWidget(self.lossFunctionLabel, 3, 0, 1, 1, QtCore.Qt.AlignRight)
+        top_left_grid.addWidget(self.lossComboBox, 3, 1, 1, 1)
+        top_left_grid.addWidget(self.optimizerLabel, 4, 0, 1, 1, QtCore.Qt.AlignRight)
+        top_left_grid.addWidget(self.optimizerComboBox, 4, 1, 1, 1)
+        top_left_grid.addWidget(self.learningRateLabel, 5, 0, 1, 1, QtCore.Qt.AlignRight)
+        top_left_grid.addWidget(self.learningRateEdit, 5, 1, 1, 1)
+        top_left_grid.addWidget(self.epochLabel, 6, 0, 1, 1, QtCore.Qt.AlignRight)
+        top_left_grid.addWidget(self.epochEdit, 6, 1, 1, 1)
 
-        self.main_widget = QtGui.QWidget()
-        self.main_widget.setLayout(grid)
-        self.setCentralWidget(self.main_widget)
-        # self.setLayout(vbox)
+        top_right_frame = QtGui.QFrame()
+        top_right_frame.setFrameShape(QtGui.QFrame.StyledPanel)
+        top_right_grid = QtGui.QGridLayout()
+        top_right_frame.setLayout(top_right_grid)
+        top_right_grid.addWidget(self.buildButton, 0, 0, 1, 1)
+        top_right_grid.addWidget(self.trainButton, 0, 1, 1, 1)
+        top_right_grid.addWidget(self.pauseTrainButton, 1, 0, 1, 1)
+        top_right_grid.addWidget(self.resumeTrainButton, 1, 1, 1, 1)
+        top_right_grid.addWidget(self.stopTrainButton, 2, 0, 1, 1)
+        top_right_grid.addWidget(self.closeAllChartsButton, 2, 1, 1, 1)
+
+        bottom_frame = QtGui.QFrame()
+        bottom_frame.setFrameShape(QtGui.QFrame.StyledPanel)
+        bottom_grid = QtGui.QGridLayout()
+        bottom_frame.setLayout(bottom_grid)
+        bottom_grid.addWidget(self.lossResultLabel, 0, 0, 1, 1, QtCore.Qt.AlignLeft)
+        bottom_grid.addWidget(self.errorResultLabel, 0, 1, 1, 1, QtCore.Qt.AlignLeft)
+        bottom_grid.addWidget(self.lossCanvas, 1, 0, 1, 2, QtCore.Qt.AlignCenter)
+        bottom_grid.addWidget(self.errorCanvas, 2, 0, 1, 2, QtCore.Qt.AlignCenter)
+
+        splitter_top = QtGui.QSplitter(QtCore.Qt.Horizontal)
+        splitter_top.addWidget(top_left_frame)
+        splitter_top.addWidget(top_right_frame)
+
+        splitter_vertical = QtGui.QSplitter(QtCore.Qt.Vertical)
+        splitter_vertical.addWidget(splitter_top)
+        splitter_vertical.addWidget(bottom_frame)
+
+        # h_box = QtGui.QHBoxLayout(self)
+        # h_box.addWidget(splitter_vertical)
+        # self.main_widget = QtGui.QWidget()
+        # self.main_widget.setLayout(h_box)
+        self.setCentralWidget(splitter_vertical)
 
         # 初始化状态栏
         self.statusBar()
@@ -185,10 +206,15 @@ class MainWindow(QtGui.QMainWindow):
 
         self.charts = []
 
-        # 新建线程对象
+        # 训练模型的线程
         self.trainThread = TrainThread(self.model)
         # 连接子进程的信号和槽函数， 发射信号时所调用的函数
         self.trainThread.weights_updated_signal.connect(self.deal_with_train_callback)
+
+        self.drawLossCanvasThread = MyGeneralThread()
+        self.drawLossCanvasThread.set_thread_function(self.lossCanvas.draw_data)
+        self.drawErrorCanvasThread = MyGeneralThread()
+        self.drawErrorCanvasThread.set_thread_function(self.errorCanvas.draw_data)
 
     # 生成模型
     @QtCore.pyqtSlot()
@@ -247,8 +273,10 @@ class MainWindow(QtGui.QMainWindow):
     def train_model(self):
         # 把按钮禁用掉
         self.trainButton.setDisabled(True)
-        # 开始执行 run() 函数里的内容
-        self.trainThread.start()
+        # 启动线程
+        self.trainThread.start(QtCore.QThread.HighPriority)
+        self.drawLossCanvasThread.start(QtCore.QThread.LowPriority)
+        self.drawErrorCanvasThread.start(QtCore.QThread.LowPriority)
         # 使能停止训练按钮
         self.pauseTrainButton.setDisabled(False)
         self.stopTrainButton.setDisabled(False)
@@ -332,10 +360,39 @@ class MainWindow(QtGui.QMainWindow):
         for chart in self.charts:
             chart.show_weight(self.model.weights_list[chart.weight_index])
 
-        if callback_dict.has_key('loss'):
-            self.lossResultLabel.setText('Loss: %f' % callback_dict['loss'])
-        if callback_dict.has_key('error'):
-            self.errorResultLabel.setText('Error: %f' % callback_dict['error'])
+        if callback_dict.has_key('temp_loss_list'):
+            temp_loss_list = callback_dict['temp_loss_list']
+            self.lossResultLabel.setText('Loss: %f' % temp_loss_list[-1])
+
+            self.lossCanvas.draw_enable_flag = False
+            if len(self.lossCanvas.index_list) == 0:
+                for i in range(len(temp_loss_list)):
+                    self.lossCanvas.index_list.append(i)
+            else:
+                for i in range(len(temp_loss_list)):
+                    self.lossCanvas.index_list.append(self.lossCanvas.index_list[-1] + 1 + i)
+            print(len(self.lossCanvas.index_list))
+            for loss in temp_loss_list:
+                self.lossCanvas.value_list.append(loss)
+            print(len(self.lossCanvas.value_list))
+            self.lossCanvas.draw_enable_flag = True
+
+        if callback_dict.has_key('temp_error_list'):
+            temp_error_list = callback_dict['temp_error_list']
+            self.errorResultLabel.setText('Error: %f' % temp_error_list[-1])
+
+            self.errorCanvas.draw_enable_flag = False
+            if len(self.errorCanvas.index_list) == 0:
+                for i in range(len(temp_error_list)):
+                    self.errorCanvas.index_list.append(i)
+            else:
+                for i in range(len(temp_error_list)):
+                    self.errorCanvas.index_list.append(self.errorCanvas.index_list[-1] + 1 + i)
+            print(len(self.errorCanvas.index_list))
+            for error in temp_error_list:
+                self.errorCanvas.value_list.append(error)
+            print(len(self.errorCanvas.value_list))
+            self.errorCanvas.draw_enable_flag = True
 
         print('show chart use time: %f' % (time.time() - t))
         # 打开train的callback使能
