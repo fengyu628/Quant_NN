@@ -136,14 +136,14 @@ class MyRNNModel(object):
                         print('Stop train!')
                         return
                     time.sleep(0.1)
-                print('train_index: %d' % train_index)
 
                 x_train = x_train_list[train_index]
                 y_train = y_train_list[train_index]
 
                 # 计算目标函数
                 loss = function_compute_loss(x_train, y_train)
-                if train_index % 1 == 0:
+                if train_index % 20 == 0:
+                    print('train_index: %d' % train_index)
                     print('loss: %f' % loss)
                     # if self.callback:
                     #     self.callback(self.weights_list)
@@ -155,9 +155,10 @@ class MyRNNModel(object):
                 # 调用回调函数
                 if self.callback and self.callback_enable is True:
                     callback_dict = {'weights_list': self.weights_list, 'temp_loss_list': temp_loss_list}
-                    print('call back ....................')
-                    print(temp_loss_list)
+                    # print('call back ....................')
+                    # print(temp_loss_list)
                     self.callback(callback_dict)
+                    # 发送完后清空
                     temp_loss_list = []
 
             # 计算验证误差
@@ -168,8 +169,15 @@ class MyRNNModel(object):
             # 调用回调函数
             if self.callback and self.callback_enable is True:
                 callback_dict = {'temp_error_list': temp_error_list}
-                print('call back ....................')
+                # print('call back ....................')
                 self.callback(callback_dict)
+                    # 发送完后清空
+                temp_error_list = []
+
+        if self.callback and self.callback_enable is True:
+            callback_dict = {'train_end': True}
+            # print('call back ....................')
+            self.callback(callback_dict)
 
         # 保存训练完的权值
         np.savez(file_weights_saved, self.weights_list)

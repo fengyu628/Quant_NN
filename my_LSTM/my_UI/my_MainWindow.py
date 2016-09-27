@@ -8,6 +8,7 @@ import numpy as np
 # import sys
 import time
 # import cv2.cv as cv
+import copy
 
 from my_thread import TrainThread, MyGeneralThread
 from my_chart import Chart
@@ -48,7 +49,7 @@ class MainWindow(QtGui.QMainWindow):
         super(MainWindow, self).__init__(parent)
 
         # self.setFixedSize(500, 300)
-        self.resize(800,600)
+        self.resize(800, 600)
         self.setWindowTitle('Model')
 
         # 创建模型
@@ -59,11 +60,18 @@ class MainWindow(QtGui.QMainWindow):
         menu_bar = self.menuBar()
         string_file = 'File'
         self.fileMenu = menu_bar.addMenu(string_file)
+
+        self.saveAction = QtGui.QAction('Save Weights', self)
+        self.saveAction.setShortcut('Ctrl+S')
+        self.saveAction.setStatusTip('Save Weights')
+        self.connect(self.saveAction, QtCore.SIGNAL('triggered()'), self.save_weights)
+
         self.exitAction = QtGui.QAction('Exit', self)
         self.exitAction.setShortcut('Ctrl+Q')
         self.exitAction.setStatusTip('Exit application')
-        # exitAction.triggered.connect(QtGui.qApp.quit)
         self.connect(self.exitAction, QtCore.SIGNAL('triggered()'), QtGui.qApp, QtCore.SLOT('quit()'))
+
+        self.fileMenu.addAction(self.saveAction)
         self.fileMenu.addAction(self.exitAction)
 
         # 初始化 “Weight” 菜单
@@ -75,11 +83,11 @@ class MainWindow(QtGui.QMainWindow):
         self.layerLabel = QtGui.QLabel('Layer Type:')
         self.layerComboBox = QtGui.QComboBox()
 
-        self.inputDimLabel = QtGui.QLabel('Input Dim:')
+        self.inputDimLabel = QtGui.QLabel('Input Dimension:')
         self.inputDimEdit = QtGui.QLineEdit(self)
         self.inputDimEdit.setText(str(self.model.input_dim))
         # 暂时不许更改输入维度
-        self.inputDimEdit.setReadOnly(True)
+        self.inputDimEdit.setDisabled(True)
 
         self.innerUnitsLabel = QtGui.QLabel('Inner Units:')
         self.innerUnitsEdit = QtGui.QLineEdit(self)
@@ -200,7 +208,12 @@ class MainWindow(QtGui.QMainWindow):
         self.setCentralWidget(splitter_vertical)
 
         # 初始化状态栏
-        self.statusBar()
+        self.statusBar = QtGui.QStatusBar(self)
+        self.statusBar.setObjectName('statusBar')
+        self.setStatusBar(self.statusBar)
+        self.statusRightLabel = QtGui.QLabel('')
+        self.statusRightLabel.setAlignment(QtCore.Qt.AlignRight)
+        self.statusBar.addPermanentWidget(self.statusRightLabel, 0)
 
         # self.setGeometry(300, 300, 300, 200)
 
@@ -211,10 +224,18 @@ class MainWindow(QtGui.QMainWindow):
         # 连接子进程的信号和槽函数， 发射信号时所调用的函数
         self.trainThread.weights_updated_signal.connect(self.deal_with_train_callback)
 
-        self.drawLossCanvasThread = MyGeneralThread()
-        self.drawLossCanvasThread.set_thread_function(self.lossCanvas.draw_data)
-        self.drawErrorCanvasThread = MyGeneralThread()
-        self.drawErrorCanvasThread.set_thread_function(self.errorCanvas.draw_data)
+        # 画 canvas 的线程
+        self.drawCanvasThread = MyGeneralThread()
+        self.drawCanvasThread.set_thread_function(self.draw_canvas)
+
+        # 用于训练计时
+        self.timer = QtCore.QTimer()
+        self.connect(self.timer, QtCore.SIGNAL('timeout()'), self.timer_event)
+        self.start_train_time = 0
+        self.training_time = 0
+
+        self.train_paused_flag = False
+        self.train_stop_flag = False
 
     # 生成模型
     @QtCore.pyqtSlot()
@@ -261,6 +282,14 @@ class MainWindow(QtGui.QMainWindow):
                                       QtGui.QMessageBox.Cancel)
             self.buildButton.setDisabled(False)
             return
+        # build 模型后，参数不再允许更改
+        self.inputDimEdit.setDisabled(True)
+        self.innerUnitsEdit.setDisabled(True)
+        self.learningRateEdit.setDisabled(True)
+        self.epochEdit.setDisabled(True)
+        self.layerComboBox.setDisabled(True)
+        self.lossComboBox.setDisabled(True)
+        self.optimizerComboBox.setDisabled(True)
         self.model.build_layer()
         # 生成权值菜单
         self.weightMenu.setDisabled(False)
@@ -275,16 +304,21 @@ class MainWindow(QtGui.QMainWindow):
         self.trainButton.setDisabled(True)
         # 启动线程
         self.trainThread.start(QtCore.QThread.HighPriority)
-        self.drawLossCanvasThread.start(QtCore.QThread.LowPriority)
-        self.drawErrorCanvasThread.start(QtCore.QThread.LowPriority)
+        self.drawCanvasThread.start(QtCore.QThread.LowPriority)
         # 使能停止训练按钮
         self.pauseTrainButton.setDisabled(False)
         self.stopTrainButton.setDisabled(False)
+
+        # 训练计时
+        self.start_train_time = time.time()
+        # 每0.1秒更新一次
+        self.timer.start(100)
 
     # 暂停训练
     @QtCore.pyqtSlot()
     def pause_train(self):
         self.model.pause_training()
+        self.train_paused_flag = True
         self.pauseTrainButton.setDisabled(True)
         self.resumeTrainButton.setDisabled(False)
 
@@ -292,6 +326,7 @@ class MainWindow(QtGui.QMainWindow):
     @QtCore.pyqtSlot()
     def resume_train(self):
         self.model.resume_training()
+        self.train_paused_flag = False
         self.pauseTrainButton.setDisabled(False)
         self.resumeTrainButton.setDisabled(True)
 
@@ -299,6 +334,8 @@ class MainWindow(QtGui.QMainWindow):
     @QtCore.pyqtSlot()
     def stop_train(self):
         self.model.stop_training()
+        self.timer.stop()
+        self.train_stop_flag = True
         self.pauseTrainButton.setDisabled(True)
         self.resumeTrainButton.setDisabled(True)
         self.stopTrainButton.setDisabled(True)
@@ -306,9 +343,6 @@ class MainWindow(QtGui.QMainWindow):
     # 生成图表，并显示相应的权值
     @QtCore.pyqtSlot()
     def show_chart(self, weight_index):
-        # print(self.model.weights_list[weight_index])
-        # weight_shape = self.model.weights_list[weight_index].get_value().shape
-        # print(weight_shape)
         chart = Chart(self.model.weights_list[weight_index], weight_index)
         self.connect(chart, QtCore.SIGNAL('closeChartWithWeightIndex(int)'), self.close_chart_event)
         self.charts.append(chart)
@@ -350,17 +384,70 @@ class MainWindow(QtGui.QMainWindow):
     def optimizer_combobox_changed(self):
         self.model.optimizer = getattr(my_optimizer, str(self.optimizerComboBox.currentText()))
 
+    # 定时调用，用来显示训练时间
+    @QtCore.pyqtSlot()
+    def timer_event(self):
+        if self.train_paused_flag is False:
+            self.training_time += time.time() - self.start_train_time
+            self.start_train_time = time.time()
+        else:
+            # 暂停训练时，时间不再累计
+            self.start_train_time = time.time()
+        # 在状态栏上显示训练时间
+        self.statusRightLabel.setText(self.format_time_with_title(u'训练时间', self.training_time))
+
+    # 保存权值
+    @QtCore.pyqtSlot()
+    def save_weights(self):
+        file_path =  QtGui.QFileDialog.getSaveFileName(self,'save file',"" ,"npz files (*.npz);;all files(*.*)")
+        if file_path == '':
+            return
+        np.savez(str(file_path), self.model.weights_list)
+
+    @staticmethod
+    def format_time_with_title(title, time_seconds):
+        return title + u'： %d天 %d小时 %d分 %d秒 .%d' % \
+               (time_seconds / (24 * 60 * 60),
+                time_seconds / (60 * 60),
+                time_seconds / 60,
+                time_seconds % 60, ((time_seconds % 1) * 10) % 10)
+
+    # 画 canvas 的线程函数
+    def draw_canvas(self):
+        while True:
+            time.sleep(0.1)
+            # 训练结束，线程也结束
+            if self.train_stop_flag is True:
+                return
+
+            if self.lossCanvas.draw_enable_flag is True:
+                x = copy.copy(self.lossCanvas.index_list)
+                y = copy.copy(self.lossCanvas.value_list)
+                if len(x) != len(y):
+                    print(len(x), len(y))
+                    # time.sleep(0.01)
+                    continue
+                self.lossCanvas.draw_data(x, y)
+
+            if self.errorCanvas.draw_enable_flag is True:
+                x = copy.copy(self.errorCanvas.index_list)
+                y = copy.copy(self.errorCanvas.value_list)
+                if len(x) != len(y):
+                    print(len(x), len(y))
+                    # time.sleep(0.01)
+                    continue
+                self.errorCanvas.draw_data(x, y)
+
     # 处理callback传过来的权值
     def deal_with_train_callback(self, callback_dict):
         # 关闭train的callback使能
         self.model.set_callback_enable(False)
-        t = time.time()
-        # self.canvas.fig.clear()
+        # t = time.time()
         # 更新窗口中的权值
         for chart in self.charts:
             chart.show_weight(self.model.weights_list[chart.weight_index])
 
-        if callback_dict.has_key('temp_loss_list'):
+        if 'temp_loss_list' in callback_dict:
             temp_loss_list = callback_dict['temp_loss_list']
             self.lossResultLabel.setText('Loss: %f' % temp_loss_list[-1])
 
@@ -371,13 +458,13 @@ class MainWindow(QtGui.QMainWindow):
             else:
                 for i in range(len(temp_loss_list)):
                     self.lossCanvas.index_list.append(self.lossCanvas.index_list[-1] + 1 + i)
-            print(len(self.lossCanvas.index_list))
+            # print(len(self.lossCanvas.index_list))
             for loss in temp_loss_list:
                 self.lossCanvas.value_list.append(loss)
-            print(len(self.lossCanvas.value_list))
+            # print(len(self.lossCanvas.value_list))
             self.lossCanvas.draw_enable_flag = True
 
-        if callback_dict.has_key('temp_error_list'):
+        if 'temp_error_list' in callback_dict:
             temp_error_list = callback_dict['temp_error_list']
             self.errorResultLabel.setText('Error: %f' % temp_error_list[-1])
 
@@ -388,13 +475,24 @@ class MainWindow(QtGui.QMainWindow):
             else:
                 for i in range(len(temp_error_list)):
                     self.errorCanvas.index_list.append(self.errorCanvas.index_list[-1] + 1 + i)
-            print(len(self.errorCanvas.index_list))
+            # print(len(self.errorCanvas.index_list))
             for error in temp_error_list:
                 self.errorCanvas.value_list.append(error)
-            print(len(self.errorCanvas.value_list))
+            # print(len(self.errorCanvas.value_list))
             self.errorCanvas.draw_enable_flag = True
 
-        print('show chart use time: %f' % (time.time() - t))
+        if 'train_end' in callback_dict:
+            if callback_dict['train_end'] is True:
+                self.timer.stop()
+                self.statusRightLabel.setText(self.format_time_with_title(u'训练结束', self.training_time))
+                self.pauseTrainButton.setDisabled(True)
+                self.resumeTrainButton.setDisabled(True)
+                self.stopTrainButton.setDisabled(True)
+                QtGui.QMessageBox.information(self, 'Train Over',
+                                              u'训练结束',
+                                              QtGui.QMessageBox.Ok)
+
+        # print('show chart use time: %f' % (time.time() - t))
         # 打开train的callback使能
         self.model.set_callback_enable(True)
         # 恢复按钮
@@ -405,6 +503,7 @@ class MainWindow(QtGui.QMainWindow):
         for weight_index, weight in enumerate(weight_list):
             weight_button = MenuButton('&%s' % weight.name, self)
             weight_button.set_index(weight_index)
+            weight_button.setStatusTip('Show "' + weight.name + '" in new window')
             # 此处用了两个信号，是为了解决自带信号 triggered() 不能带参数的问题
             self.connect(weight_button, QtCore.SIGNAL('triggered()'), weight_button.emit_f)
             self.connect(weight_button, QtCore.SIGNAL('clickMenuButtonWithWeightIndex(int)'), self.show_chart)
@@ -412,6 +511,7 @@ class MainWindow(QtGui.QMainWindow):
             # 引用是为了后面恢复使能
             self.weightMenuItems.append(weight_button)
 
+    # 初始化下拉菜单
     def init_paras_labels(self):
         for item in dir(my_layer):
             if str(item).startswith('Layer_'):
