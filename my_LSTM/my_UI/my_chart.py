@@ -88,7 +88,7 @@ class Chart(QtGui.QWidget):
         if x_size < self.min_width:
             x_size = self.min_width
 
-        print('x size:%d, y size:%d' % (x_size, y_size))
+        # print('x size:%d, y size:%d' % (x_size, y_size))
         self.setFixedSize(x_size, y_size)
 
     def show_weight(self, weight_t):

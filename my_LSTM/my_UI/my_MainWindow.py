@@ -9,6 +9,7 @@ import numpy as np
 import time
 # import cv2.cv as cv
 import copy
+import pickle
 
 from my_thread import TrainThread, MyGeneralThread
 from my_chart import Chart
@@ -48,12 +49,10 @@ class MainWindow(QtGui.QMainWindow):
     def __init__(self, model, parent=None):
         super(MainWindow, self).__init__(parent)
 
+        # ============================================= 窗口布局 =====================================================
         # self.setFixedSize(500, 300)
         self.resize(800, 600)
         self.setWindowTitle('Model')
-
-        # 创建模型
-        self.model = model()
 
         # 初始化菜单栏
         # 初始化 “File” 菜单
@@ -61,16 +60,23 @@ class MainWindow(QtGui.QMainWindow):
         string_file = 'File'
         self.fileMenu = menu_bar.addMenu(string_file)
 
-        self.saveAction = QtGui.QAction('Save Weights', self)
+        self.openAction = QtGui.QAction('Open Model', self)
+        self.openAction.setShortcut('Ctrl+O')
+        self.openAction.setStatusTip('Open Model')
+        self.connect(self.openAction, QtCore.SIGNAL('triggered()'), self.open_model)
+
+        self.saveAction = QtGui.QAction('Save Model', self)
         self.saveAction.setShortcut('Ctrl+S')
-        self.saveAction.setStatusTip('Save Weights')
-        self.connect(self.saveAction, QtCore.SIGNAL('triggered()'), self.save_weights)
+        self.saveAction.setStatusTip('Save Model')
+        self.saveAction.setDisabled(True)
+        self.connect(self.saveAction, QtCore.SIGNAL('triggered()'), self.save_model)
 
         self.exitAction = QtGui.QAction('Exit', self)
         self.exitAction.setShortcut('Ctrl+Q')
         self.exitAction.setStatusTip('Exit application')
         self.connect(self.exitAction, QtCore.SIGNAL('triggered()'), QtGui.qApp, QtCore.SLOT('quit()'))
 
+        self.fileMenu.addAction(self.openAction)
         self.fileMenu.addAction(self.saveAction)
         self.fileMenu.addAction(self.exitAction)
 
@@ -85,13 +91,11 @@ class MainWindow(QtGui.QMainWindow):
 
         self.inputDimLabel = QtGui.QLabel('Input Dimension:')
         self.inputDimEdit = QtGui.QLineEdit(self)
-        self.inputDimEdit.setText(str(self.model.input_dim))
         # 暂时不许更改输入维度
         self.inputDimEdit.setDisabled(True)
 
         self.innerUnitsLabel = QtGui.QLabel('Inner Units:')
         self.innerUnitsEdit = QtGui.QLineEdit(self)
-        self.innerUnitsEdit.setText(str(self.model.inner_units))
 
         self.lossFunctionLabel = QtGui.QLabel('Loss Function:')
         self.lossComboBox = QtGui.QComboBox()
@@ -101,11 +105,9 @@ class MainWindow(QtGui.QMainWindow):
 
         self.learningRateLabel = QtGui.QLabel('learning Rate:')
         self.learningRateEdit = QtGui.QLineEdit(self)
-        self.learningRateEdit.setText(str(self.model.learning_rate))
 
         self.epochLabel = QtGui.QLabel('Epoch:')
         self.epochEdit = QtGui.QLineEdit(self)
-        self.epochEdit.setText(str(self.model.epoch))
 
         self.buildButton = QtGui.QPushButton('Build Model', self)
         self.buildButton.setFixedSize(100, 50)
@@ -142,17 +144,15 @@ class MainWindow(QtGui.QMainWindow):
         self.lossCanvas = MplCanvas(title='Loss')
         self.errorCanvas = MplCanvas(title='Error')
 
-        self.init_paras_labels()
-
-        self.connect(self.layerComboBox,
-                     QtCore.SIGNAL('currentIndexChanged(int)'),
-                     self.layer_combobox_changed)
-        self.connect(self.lossComboBox,
-                     QtCore.SIGNAL('currentIndexChanged(int)'),
-                     self.loss_combobox_changed)
-        self.connect(self.optimizerComboBox,
-                     QtCore.SIGNAL('currentIndexChanged(int)'),
-                     self.optimizer_combobox_changed)
+        # self.connect(self.layerComboBox,
+        #              QtCore.SIGNAL('currentIndexChanged(int)'),
+        #              self.layer_combobox_changed)
+        # self.connect(self.lossComboBox,
+        #              QtCore.SIGNAL('currentIndexChanged(int)'),
+        #              self.loss_combobox_changed)
+        # self.connect(self.optimizerComboBox,
+        #              QtCore.SIGNAL('currentIndexChanged(int)'),
+        #              self.optimizer_combobox_changed)
 
         top_left_frame = QtGui.QFrame()
         top_left_frame.setFrameShape(QtGui.QFrame.StyledPanel)
@@ -217,10 +217,12 @@ class MainWindow(QtGui.QMainWindow):
 
         # self.setGeometry(300, 300, 300, 200)
 
-        self.charts = []
+        # =========================================== 结束窗口布局 =====================================================
+
+        self.init_combo_box()
 
         # 训练模型的线程
-        self.trainThread = TrainThread(self.model)
+        self.trainThread = TrainThread()
         # 连接子进程的信号和槽函数， 发射信号时所调用的函数
         self.trainThread.weights_updated_signal.connect(self.deal_with_train_callback)
 
@@ -237,71 +239,65 @@ class MainWindow(QtGui.QMainWindow):
         self.train_paused_flag = False
         self.train_stop_flag = False
 
+        self.charts = []
+
+        # 创建模型
+        self.model = model()
+        # 设置模型相关参数
+        self.set_parameters_related_to_mode()
+
     # 生成模型
     @QtCore.pyqtSlot()
     def build_model(self):
+        try:
+            self.model.layer_type = getattr(my_layer, str(self.layerComboBox.currentText()))
+            self.model.input_dim = int(self.inputDimEdit.text())
+            self.model.inner_units = int(self.innerUnitsEdit.text())
+            self.model.build_layer()
+        except Exception as e:
+            print(e)
+            QtGui.QMessageBox.warning(self, 'Build Error',
+                                          str(e),
+                                          QtGui.QMessageBox.Close)
+            return
+        self.interface_change_after_build_model()
+
+    def interface_change_after_build_model(self):
+        self.init_weight_menu(self.model.weights_list)
         # 把按钮禁用掉
         self.buildButton.setDisabled(True)
-        try:
-            self.model.input_dim = int(self.inputDimEdit.text())
-        except Exception as e:
-            print('error input_dim')
-            print(e)
-            QtGui.QMessageBox.warning(self, 'warning',
-                                      u'Input Dim 错误',
-                                      QtGui.QMessageBox.Cancel)
-            self.buildButton.setDisabled(False)
-            return
-        try:
-            self.model.inner_units = int(self.innerUnitsEdit.text())
-        except Exception as e:
-            print('error inner_units')
-            print(e)
-            QtGui.QMessageBox.warning(self, 'warning',
-                                      u'Inner Units 错误',
-                                      QtGui.QMessageBox.Cancel)
-            self.buildButton.setDisabled(False)
-            return
-        try:
-            self.model.learning_rate = float(self.learningRateEdit.text())
-        except Exception as e:
-            print('error learning_rate')
-            print(e)
-            QtGui.QMessageBox.warning(self, 'warning',
-                                      u'Learning Rate 错误',
-                                      QtGui.QMessageBox.Cancel)
-            self.buildButton.setDisabled(False)
-            return
-        try:
-            self.model.epoch = int(self.epochEdit.text())
-        except Exception as e:
-            print('error epoch')
-            print(e)
-            QtGui.QMessageBox.warning(self, 'warning',
-                                      u'Epoch 错误',
-                                      QtGui.QMessageBox.Cancel)
-            self.buildButton.setDisabled(False)
-            return
-        # build 模型后，参数不再允许更改
+        # build 模型后，模型参数不再允许更改
+        self.layerComboBox.setDisabled(True)
         self.inputDimEdit.setDisabled(True)
         self.innerUnitsEdit.setDisabled(True)
-        self.learningRateEdit.setDisabled(True)
-        self.epochEdit.setDisabled(True)
-        self.layerComboBox.setDisabled(True)
-        self.lossComboBox.setDisabled(True)
-        self.optimizerComboBox.setDisabled(True)
-        self.model.build_layer()
         # 生成权值菜单
         self.weightMenu.setDisabled(False)
-        self.init_weight_menu(self.model.weights_list)
         # 使能训练按钮
         self.trainButton.setDisabled(False)
+        # 使能保存模型选项
+        self.saveAction.setDisabled(False)
 
     # 开始训练模型
     @QtCore.pyqtSlot()
     def train_model(self):
+        try:
+            self.model.loss = getattr(my_loss, str(self.lossComboBox.currentText()))
+            self.model.optimizer = getattr(my_optimizer, str(self.optimizerComboBox.currentText()))
+            self.model.learning_rate = float(self.learningRateEdit.text())
+            self.model.epoch = int(self.epochEdit.text())
+        except Exception as e:
+            print(e)
+            QtGui.QMessageBox.warning(self, 'Train Error',
+                                      str(e),
+                                      QtGui.QMessageBox.Close)
+            return
         # 把按钮禁用掉
         self.trainButton.setDisabled(True)
+        # 训练开始后，训练参数不再允许更改
+        self.lossComboBox.setDisabled(True)
+        self.optimizerComboBox.setDisabled(True)
+        self.learningRateEdit.setDisabled(True)
+        self.epochEdit.setDisabled(True)
         # 启动线程
         self.trainThread.start(QtCore.QThread.HighPriority)
         self.drawCanvasThread.start(QtCore.QThread.LowPriority)
@@ -369,21 +365,6 @@ class MainWindow(QtGui.QMainWindow):
         for item in self.weightMenuItems:
             item.setDisabled(False)
 
-    # 改变模型的 layer
-    @QtCore.pyqtSlot()
-    def layer_combobox_changed(self):
-        self.model.layer_type = getattr(my_layer, str(self.layerComboBox.currentText()))
-
-    # 改变模型的 loss
-    @QtCore.pyqtSlot()
-    def loss_combobox_changed(self):
-        self.model.loss = getattr(my_loss, str(self.lossComboBox.currentText()))
-
-    # 改变模型的 optimizer
-    @QtCore.pyqtSlot()
-    def optimizer_combobox_changed(self):
-        self.model.optimizer = getattr(my_optimizer, str(self.optimizerComboBox.currentText()))
-
     # 定时调用，用来显示训练时间
     @QtCore.pyqtSlot()
     def timer_event(self):
@@ -396,13 +377,28 @@ class MainWindow(QtGui.QMainWindow):
         # 在状态栏上显示训练时间
         self.statusRightLabel.setText(self.format_time_with_title(u'训练时间', self.training_time))
 
-    # 保存权值
+    # 导入模型
     @QtCore.pyqtSlot()
-    def save_weights(self):
-        file_path =  QtGui.QFileDialog.getSaveFileName(self,'save file',"" ,"npz files (*.npz);;all files(*.*)")
+    def open_model(self):
+        file_path = QtGui.QFileDialog.getOpenFileName(self,"Open Model","","pkl files(*.pkl)")
+        with open(file_path, 'r') as f:
+            self.model = pickle.load(f)
+
+            self.set_parameters_related_to_mode()
+
+            self.interface_change_after_build_model()
+
+    # 保存模型
+    @QtCore.pyqtSlot()
+    def save_model(self):
+        file_path =  QtGui.QFileDialog.getSaveFileName(self,'Save Model',"" ,"pkl files (*.pkl);;all files(*.*)")
         if file_path == '':
             return
-        np.savez(str(file_path), self.model.weights_list)
+        # np.savez(str(file_path), self.model.weights_list)
+        with open(file_path, 'w') as f:
+            model = copy.deepcopy(self.model)
+            model.init_status_before_save()
+            pickle.dump(model, f)
 
     @staticmethod
     def format_time_with_title(title, time_seconds):
@@ -500,6 +496,8 @@ class MainWindow(QtGui.QMainWindow):
 
     # 初始化菜单栏
     def init_weight_menu(self, weight_list):
+        self.weightMenu.clear()
+        self.weightMenuItems = []
         for weight_index, weight in enumerate(weight_list):
             weight_button = MenuButton('&%s' % weight.name, self)
             weight_button.set_index(weight_index)
@@ -512,21 +510,51 @@ class MainWindow(QtGui.QMainWindow):
             self.weightMenuItems.append(weight_button)
 
     # 初始化下拉菜单
-    def init_paras_labels(self):
+    def init_combo_box(self):
         for item in dir(my_layer):
             if str(item).startswith('Layer_'):
+                # 遍历的顺序为倒序，所以每次都插入到第一个
                 self.layerComboBox.insertItem(0, item)
-        # 遍历的顺序为倒序，所以每次都插入到第一个
         self.layerComboBox.setCurrentIndex(0)
 
         for item in dir(my_loss):
             if str(item).startswith('loss_'):
+                # 遍历的顺序为倒序，所以每次都插入到第一个
                 self.lossComboBox.insertItem(0, item)
-        # 遍历的顺序为倒序，所以每次都插入到第一个
         self.lossComboBox.setCurrentIndex(0)
 
         for item in dir(my_optimizer):
             if str(item).startswith('optimizer_'):
+                # 遍历的顺序为倒序，所以每次都插入到第一个
                 self.optimizerComboBox.insertItem(0, item)
-        # 遍历的顺序为倒序，所以每次都插入到第一个
         self.optimizerComboBox.setCurrentIndex(0)
+
+    # def set_combo_box(self):
+    #     for index in range(self.layerComboBox.count()):
+    #         if self.model.layer_type.__name__ == self.layerComboBox.itemText(index):
+    #             self.layerComboBox.setCurrentIndex(index)
+    #     for index in range(self.lossComboBox.count()):
+    #         if self.model.loss.__name__ == self.lossComboBox.itemText(index):
+    #             self.lossComboBox.setCurrentIndex(index)
+    #     for index in range(self.optimizerComboBox.count()):
+    #         if self.model.optimizer.__name__ == self.optimizerComboBox.itemText(index):
+    #             self.optimizerComboBox.setCurrentIndex(index)
+
+    def set_parameters_related_to_mode(self):
+        self.inputDimEdit.setText(str(self.model.input_dim))
+        self.innerUnitsEdit.setText(str(self.model.inner_units))
+        self.learningRateEdit.setText(str(self.model.learning_rate))
+        self.epochEdit.setText(str(self.model.epoch))
+        # self.set_combo_box()
+        for index in range(self.layerComboBox.count()):
+            if self.model.layer_type.__name__ == self.layerComboBox.itemText(index):
+                self.layerComboBox.setCurrentIndex(index)
+        for index in range(self.lossComboBox.count()):
+            if self.model.loss.__name__ == self.lossComboBox.itemText(index):
+                self.lossComboBox.setCurrentIndex(index)
+        for index in range(self.optimizerComboBox.count()):
+            if self.model.optimizer.__name__ == self.optimizerComboBox.itemText(index):
+                self.optimizerComboBox.setCurrentIndex(index)
+        self.trainThread.set_model(self.model)
+
+

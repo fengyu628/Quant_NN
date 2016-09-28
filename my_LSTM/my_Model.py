@@ -8,7 +8,7 @@ import time
 
 from my_layer import *
 from my_optimizer import *
-from my_loss import loss_variance
+from my_loss import *
 
 
 class MyRNNModel(object):
@@ -19,8 +19,8 @@ class MyRNNModel(object):
                  layer_type=Layer_LSTM,
                  input_dim=2,
                  inner_units=20,
-                 optimizer=optimizer_sgd,
                  loss=loss_variance,
+                 optimizer=optimizer_sgd,
                  learning_rate=0.001,
                  epoch=100
                  ):
@@ -30,15 +30,20 @@ class MyRNNModel(object):
         self.layer_type = layer_type
         self.layer = None
         self.weights_list = []
-        self.optimizer = optimizer
         self.loss = loss
+        self.optimizer = optimizer
         self.learning_rate = learning_rate
         self.epoch = epoch
-        # self.local_paras = locals()
 
         self.callback = None
         self.callback_enable = True
 
+        self.pause_train_flag = False
+        self.stop_train_flag = False
+
+    def init_status_before_save(self):
+        self.callback = None
+        self.callback_enable = True
         self.pause_train_flag = False
         self.stop_train_flag = False
 
