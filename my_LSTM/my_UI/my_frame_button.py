@@ -1,33 +1,28 @@
 # coding:utf-8
 
 from PyQt4 import QtGui
+from my_controls import MyButton
 
 
 class ButtonFrame(QtGui.QFrame):
     def __init__(self, *args):
         super(ButtonFrame, self).__init__(*args)
 
-        self.buildButton = QtGui.QPushButton('Build Model', self)
-        self.buildButton.setFixedSize(100, 50)
+        self.buildButton = MyButton('Build Model', self)
 
-        self.trainButton = QtGui.QPushButton('Train', self)
-        self.trainButton.setFixedSize(100, 50)
+        self.trainButton = MyButton('Train', self)
         self.trainButton.setDisabled(True)
 
-        self.pauseTrainButton = QtGui.QPushButton('Pause Train', self)
-        self.pauseTrainButton.setFixedSize(100, 50)
+        self.pauseTrainButton = MyButton('Pause Train', self)
         self.pauseTrainButton.setDisabled(True)
 
-        self.resumeTrainButton = QtGui.QPushButton('Resume Train', self)
-        self.resumeTrainButton.setFixedSize(100, 50)
+        self.resumeTrainButton = MyButton('Resume Train', self)
         self.resumeTrainButton.setDisabled(True)
 
-        self.stopTrainButton = QtGui.QPushButton('Stop Train', self)
-        self.stopTrainButton.setFixedSize(100, 50)
+        self.stopTrainButton = MyButton('Stop Train', self)
         self.stopTrainButton.setDisabled(True)
 
-        self.closeAllChartsButton = QtGui.QPushButton('Close All\nWeight Charts', self)
-        self.closeAllChartsButton.setFixedSize(100, 50)
+        self.closeAllChartsButton = MyButton('Close All\nCharts', self)
 
         grid = QtGui.QGridLayout()
         grid.addWidget(self.buildButton, 0, 0, 1, 1)
