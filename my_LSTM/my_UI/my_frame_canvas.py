@@ -18,8 +18,8 @@ class CanvasFrame(QtGui.QFrame):
 
         grid = QtGui.QGridLayout()
         grid.addWidget(self.lossResultLabel, 0, 0, 1, 1, QtCore.Qt.AlignLeft)
-        grid.addWidget(self.errorResultLabel, 0, 1, 1, 1, QtCore.Qt.AlignLeft)
         grid.addWidget(self.lossCanvas, 1, 0, 1, 2, QtCore.Qt.AlignCenter)
-        grid.addWidget(self.errorCanvas, 2, 0, 1, 2, QtCore.Qt.AlignCenter)
+        grid.addWidget(self.errorResultLabel, 2, 0, 1, 1, QtCore.Qt.AlignLeft)
+        grid.addWidget(self.errorCanvas, 3, 0, 1, 2, QtCore.Qt.AlignCenter)
         self.setLayout(grid)
         self.setFrameShape(QtGui.QFrame.StyledPanel)

@@ -60,27 +60,13 @@ class MainWindow(QtGui.QMainWindow):
         # 初始化菜单栏
         # 初始化 “File” 菜单
         menu_bar = self.menuBar()
-        string_file = 'File'
-        self.fileMenu = menu_bar.addMenu(string_file)
-
-        self.openAction = QtGui.QAction('Open Model', self)
-        self.openAction.setShortcut('Ctrl+O')
-        self.openAction.setStatusTip('Open Model')
-        self.connect(self.openAction, QtCore.SIGNAL('triggered()'), self.open_model)
-
-        self.saveAction = QtGui.QAction('Save Model', self)
-        self.saveAction.setShortcut('Ctrl+S')
-        self.saveAction.setStatusTip('Save Model')
-        self.saveAction.setDisabled(True)
-        self.connect(self.saveAction, QtCore.SIGNAL('triggered()'), self.save_model)
+        self.fileMenu = menu_bar.addMenu('File')
 
         self.exitAction = QtGui.QAction('Exit', self)
         self.exitAction.setShortcut('Ctrl+Q')
         self.exitAction.setStatusTip('Exit application')
         self.connect(self.exitAction, QtCore.SIGNAL('triggered()'), QtGui.qApp, QtCore.SLOT('quit()'))
 
-        self.fileMenu.addAction(self.openAction)
-        self.fileMenu.addAction(self.saveAction)
         self.fileMenu.addAction(self.exitAction)
 
         # 初始化 “Weight” 菜单
@@ -99,12 +85,16 @@ class MainWindow(QtGui.QMainWindow):
 
         self.buttonFrame = ButtonFrame()
         self.buildButton = self.buttonFrame.buildButton
+        self.loadButton = self.buttonFrame.loadButton
+        self.saveButton = self.buttonFrame.saveButton
         self.trainButton = self.buttonFrame.trainButton
         self.pauseTrainButton = self.buttonFrame.pauseTrainButton
         self.resumeTrainButton = self.buttonFrame.resumeTrainButton
         self.stopTrainButton = self.buttonFrame.stopTrainButton
         self.closeAllChartsButton = self.buttonFrame.closeAllChartsButton
         self.connect(self.buildButton, QtCore.SIGNAL('clicked()'), self.build_model)
+        self.connect(self.loadButton, QtCore.SIGNAL('clicked()'), self.open_model)
+        self.connect(self.saveButton, QtCore.SIGNAL('clicked()'), self.save_model)
         self.connect(self.trainButton, QtCore.SIGNAL('clicked()'), self.train_model)
         self.connect(self.pauseTrainButton, QtCore.SIGNAL('clicked()'), self.pause_train)
         self.connect(self.resumeTrainButton, QtCore.SIGNAL('clicked()'), self.resume_train)
@@ -460,7 +450,7 @@ class MainWindow(QtGui.QMainWindow):
         self.editFrame.build_model()
         self.buttonFrame.build_model()
         # 使能保存模型选项
-        self.saveAction.setDisabled(False)
+        self.saveButton.setDisabled(False)
 
         self.lossCanvas.index_list = []
         self.lossCanvas.value_list = []

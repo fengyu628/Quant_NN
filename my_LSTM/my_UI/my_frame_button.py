@@ -8,29 +8,36 @@ class ButtonFrame(QtGui.QFrame):
     def __init__(self, *args):
         super(ButtonFrame, self).__init__(*args)
 
-        self.buildButton = MyButton('Build Model', self)
+        self.buildButton = MyButton('Build\nModel', self)
+
+        self.loadButton = MyButton('Load\nModel', self)
+
+        self.saveButton = MyButton('Save\nModel', self)
+        self.saveButton.setDisabled(True)
 
         self.trainButton = MyButton('Train', self)
         self.trainButton.setDisabled(True)
 
-        self.pauseTrainButton = MyButton('Pause Train', self)
+        self.pauseTrainButton = MyButton('Pause\nTrain', self)
         self.pauseTrainButton.setDisabled(True)
 
-        self.resumeTrainButton = MyButton('Resume Train', self)
+        self.resumeTrainButton = MyButton('Resume\nTrain', self)
         self.resumeTrainButton.setDisabled(True)
 
-        self.stopTrainButton = MyButton('Stop Train', self)
+        self.stopTrainButton = MyButton('Stop\nTrain', self)
         self.stopTrainButton.setDisabled(True)
 
         self.closeAllChartsButton = MyButton('Close All\nCharts', self)
 
         grid = QtGui.QGridLayout()
         grid.addWidget(self.buildButton, 0, 0, 1, 1)
-        grid.addWidget(self.trainButton, 0, 1, 1, 1)
-        grid.addWidget(self.pauseTrainButton, 1, 0, 1, 1)
-        grid.addWidget(self.resumeTrainButton, 1, 1, 1, 1)
-        grid.addWidget(self.stopTrainButton, 2, 0, 1, 1)
-        grid.addWidget(self.closeAllChartsButton, 2, 1, 1, 1)
+        grid.addWidget(self.loadButton, 0, 1, 1, 1)
+        grid.addWidget(self.saveButton, 0, 2, 1, 1)
+        grid.addWidget(self.trainButton, 1, 0, 1, 1)
+        grid.addWidget(self.pauseTrainButton, 1, 1, 1, 1)
+        grid.addWidget(self.resumeTrainButton, 1, 2, 1, 1)
+        grid.addWidget(self.stopTrainButton, 1, 3, 1, 1)
+        grid.addWidget(self.closeAllChartsButton, 2, 0, 1, 1)
         self.setLayout(grid)
         self.setFrameShape(QtGui.QFrame.StyledPanel)
 
