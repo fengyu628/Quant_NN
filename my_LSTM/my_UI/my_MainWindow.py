@@ -175,6 +175,9 @@ class MainWindow(QtGui.QMainWindow):
             return
         
         self.set_status_before_train()
+        # 测试用
+        for w in self.model.weights_list:
+            print(w.get_value().size)
 
     # 开始训练模型
     @QtCore.pyqtSlot()
@@ -291,7 +294,7 @@ class MainWindow(QtGui.QMainWindow):
         # np.savez(str(file_path), self.model.weights_list)
         with open(file_path, 'w') as f:
             model = copy.deepcopy(self.model)
-            model.init_status_before_save()
+            model.set_status_before_save()
             pickle.dump(model, f)
 
     # *************************************************** 其他函数 ******************************************************
@@ -451,7 +454,7 @@ class MainWindow(QtGui.QMainWindow):
         self.buttonFrame.build_model()
         # 使能保存模型选项
         self.saveButton.setDisabled(False)
-
+        # 清空 canvas 显示
         self.lossCanvas.index_list = []
         self.lossCanvas.value_list = []
         self.errorCanvas.index_list = []

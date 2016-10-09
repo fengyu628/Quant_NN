@@ -41,7 +41,7 @@ class MyRNNModel(object):
         self.pause_train_flag = False
         self.stop_train_flag = False
 
-    def init_status_before_save(self):
+    def set_status_before_save(self):
         self.callback = None
         self.callback_enable = True
         self.pause_train_flag = False
