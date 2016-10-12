@@ -14,8 +14,8 @@ import pickle
 from my_thread import TrainThread, MyGeneralThread
 from my_chart import Chart
 # from my_mplCanvas import MplCanvas
-from my_frame_edit import EditFrame
-from my_frame_button import ButtonFrame
+from my_frame_model import ModelFrame
+from my_frame_train import TrainFrame
 from my_frame_canvas import CanvasFrame
 
 from my_LSTM import my_layer
@@ -25,13 +25,13 @@ from my_LSTM import my_optimizer
 # _fromUtf8 = QtCore.QString.fromUtf8
 
 
-class MenuButton(QtGui.QAction):
+class WeightMenuButton(QtGui.QAction):
     """
     重写菜单栏的项目。
     用来实现，在被触发时，发射带参数的信号，而且这个参数是和该项目绑定的。
     """
     def __init__(self, *args):
-        super(MenuButton, self).__init__(*args)
+        super(WeightMenuButton, self).__init__(*args)
         self.name = None
         self.index = 0
 
@@ -41,7 +41,7 @@ class MenuButton(QtGui.QAction):
 
     # 发射带有权值序号的信号
     def emit_f(self):
-        self.emit(QtCore.SIGNAL('clickMenuButtonWithWeightIndex(int)'), self.index)
+        self.emit(QtCore.SIGNAL('clickWeightMenuButtonWithWeightIndex(int)'), self.index)
         self.setDisabled(True)
 
 
@@ -74,32 +74,38 @@ class MainWindow(QtGui.QMainWindow):
         self.weightMenu.setDisabled(True)
         self.weightMenuItems = []
 
-        self.editFrame = EditFrame()
-        self.layerComboBox = self.editFrame.layerComboBox
-        self.inputDimEdit = self.editFrame.inputDimEdit
-        self.innerUnitsEdit = self.editFrame.innerUnitsEdit
-        self.lossComboBox = self.editFrame.lossComboBox
-        self.optimizerComboBox = self.editFrame.optimizerComboBox
-        self.learningRateEdit = self.editFrame.learningRateEdit
-        self.epochEdit = self.editFrame.epochEdit
+        self.ModelFrame = ModelFrame()
+        self.layerComboBox = self.ModelFrame.layerComboBox
+        self.inputDimEdit = self.ModelFrame.inputDimEdit
+        self.innerUnitsEdit = self.ModelFrame.innerUnitsEdit
+        self.parametersEdit = self.ModelFrame.parametersEdit
+        self.buildButton = self.ModelFrame.buildButton
+        self.loadButton = self.ModelFrame.loadButton
+        self.saveButton = self.ModelFrame.saveButton
 
-        self.buttonFrame = ButtonFrame()
-        self.buildButton = self.buttonFrame.buildButton
-        self.loadButton = self.buttonFrame.loadButton
-        self.saveButton = self.buttonFrame.saveButton
-        self.trainButton = self.buttonFrame.trainButton
-        self.pauseTrainButton = self.buttonFrame.pauseTrainButton
-        self.resumeTrainButton = self.buttonFrame.resumeTrainButton
-        self.stopTrainButton = self.buttonFrame.stopTrainButton
-        self.closeAllChartsButton = self.buttonFrame.closeAllChartsButton
+        self.TrainFrame = TrainFrame()
+        self.trainingFilesButton = self.TrainFrame.trainingFilesButton
+        self.trainingFilesEdit = self.TrainFrame.trainingFilesEdit
+        self.validateFilesButton = self.TrainFrame.validateFilesButton
+        self.validateFilesEdit = self.TrainFrame.validateFilesEdit
+        self.lossComboBox = self.TrainFrame.lossComboBox
+        self.optimizerComboBox = self.TrainFrame.optimizerComboBox
+        self.learningRateEdit = self.TrainFrame.learningRateEdit
+        self.epochEdit = self.TrainFrame.epochEdit
+        self.trainButton = self.TrainFrame.trainButton
+        self.pauseTrainButton = self.TrainFrame.pauseTrainButton
+        self.resumeTrainButton = self.TrainFrame.resumeTrainButton
+        self.stopTrainButton = self.TrainFrame.stopTrainButton
+
         self.connect(self.buildButton, QtCore.SIGNAL('clicked()'), self.build_model)
         self.connect(self.loadButton, QtCore.SIGNAL('clicked()'), self.open_model)
         self.connect(self.saveButton, QtCore.SIGNAL('clicked()'), self.save_model)
+        self.connect(self.trainingFilesButton, QtCore.SIGNAL('clicked()'), self.training_files)
+        self.connect(self.validateFilesButton, QtCore.SIGNAL('clicked()'), self.validate_files)
         self.connect(self.trainButton, QtCore.SIGNAL('clicked()'), self.train_model)
         self.connect(self.pauseTrainButton, QtCore.SIGNAL('clicked()'), self.pause_train)
         self.connect(self.resumeTrainButton, QtCore.SIGNAL('clicked()'), self.resume_train)
         self.connect(self.stopTrainButton, QtCore.SIGNAL('clicked()'), self.stop_train)
-        self.connect(self.closeAllChartsButton, QtCore.SIGNAL('clicked()'), self.close_all_charts)
 
         bottom_frame = CanvasFrame()
         self.lossResultLabel = bottom_frame.lossResultLabel
@@ -108,8 +114,8 @@ class MainWindow(QtGui.QMainWindow):
         self.errorCanvas = bottom_frame.errorCanvas
 
         splitter_top = QtGui.QSplitter(QtCore.Qt.Horizontal)
-        splitter_top.addWidget(self.editFrame)
-        splitter_top.addWidget(self.buttonFrame)
+        splitter_top.addWidget(self.ModelFrame)
+        splitter_top.addWidget(self.TrainFrame)
 
         splitter_vertical = QtGui.QSplitter(QtCore.Qt.Vertical)
         splitter_vertical.addWidget(splitter_top)
@@ -175,9 +181,6 @@ class MainWindow(QtGui.QMainWindow):
             return
         
         self.set_status_before_train()
-        # 测试用
-        for w in self.model.weights_list:
-            print(w.get_value().size)
 
     # 开始训练模型
     @QtCore.pyqtSlot()
@@ -195,8 +198,8 @@ class MainWindow(QtGui.QMainWindow):
                                       QtGui.QMessageBox.Close)
             return
 
-        self.editFrame.train_model()
-        self.buttonFrame.train_model()
+        self.ModelFrame.train_model()
+        self.TrainFrame.train_model()
 
         # 启动线程
         self.trainThread.start(QtCore.QThread.HighPriority)
@@ -212,14 +215,14 @@ class MainWindow(QtGui.QMainWindow):
     def pause_train(self):
         self.model.pause_training()
         self.train_paused_flag = True
-        self.buttonFrame.pause_train()
+        self.TrainFrame.pause_train()
 
     # 重新开始训练
     @QtCore.pyqtSlot()
     def resume_train(self):
         self.model.resume_training()
         self.train_paused_flag = False
-        self.buttonFrame.resume_train()
+        self.TrainFrame.resume_train()
 
     # 停止训练
     @QtCore.pyqtSlot()
@@ -227,7 +230,7 @@ class MainWindow(QtGui.QMainWindow):
         self.model.stop_training()
         self.timer.stop()
         self.stop_draw_canvas_thread_flag = True
-        self.buttonFrame.stop_train()
+        self.TrainFrame.stop_train()
 
     # 生成图表，并显示相应的权值
     @QtCore.pyqtSlot()
@@ -296,6 +299,21 @@ class MainWindow(QtGui.QMainWindow):
             model = copy.deepcopy(self.model)
             model.set_status_before_save()
             pickle.dump(model, f)
+
+    @QtCore.pyqtSlot()
+    def training_files(self):
+        print('training_files')
+        files = QtGui.QFileDialog.getOpenFileNames(self,
+                                                   "Select training files",
+                                                   "..",
+                                                   "CSV Files (*.csv);;All Files (*)")
+        for file in files:
+            print(file)
+        self.trainingFilesEdit.setText('%d files selected' % len(files))
+
+    @QtCore.pyqtSlot()
+    def validate_files(self):
+        print('validate_files')
 
     # *************************************************** 其他函数 ******************************************************
 
@@ -380,7 +398,7 @@ class MainWindow(QtGui.QMainWindow):
                 self.timer.stop()
                 self.stop_draw_canvas_thread_flag = True
                 self.statusRightLabel.setText(self.format_time_with_title(u'训练结束', self.training_time))
-                self.buttonFrame.stop_train()
+                self.TrainFrame.stop_train()
                 QtGui.QMessageBox.information(self, 'Train Over',
                                               u'训练结束',
                                               QtGui.QMessageBox.Ok)
@@ -396,15 +414,20 @@ class MainWindow(QtGui.QMainWindow):
         self.weightMenu.clear()
         self.weightMenuItems = []
         for weight_index, weight in enumerate(weight_list):
-            weight_button = MenuButton('&%s' % weight.name, self)
+            weight_button = WeightMenuButton('&%s' % weight.name, self)
             weight_button.set_index(weight_index)
             weight_button.setStatusTip('Show "' + weight.name + '" in new window')
             # 此处用了两个信号，是为了解决自带信号 triggered() 不能带参数的问题
             self.connect(weight_button, QtCore.SIGNAL('triggered()'), weight_button.emit_f)
-            self.connect(weight_button, QtCore.SIGNAL('clickMenuButtonWithWeightIndex(int)'), self.show_chart)
+            self.connect(weight_button, QtCore.SIGNAL('clickWeightMenuButtonWithWeightIndex(int)'), self.show_chart)
             self.weightMenu.addAction(weight_button)
             # 引用是为了后面恢复使能
             self.weightMenuItems.append(weight_button)
+        self.weightMenu.addSeparator()
+        close_all_button = QtGui.QAction('close all charts', self)
+        close_all_button.setStatusTip('Close all charts')
+        self.connect(close_all_button, QtCore.SIGNAL('triggered()'), self.close_all_charts)
+        self.weightMenu.addAction(close_all_button)
         # 使能菜单
         self.weightMenu.setDisabled(False)
 
@@ -449,9 +472,14 @@ class MainWindow(QtGui.QMainWindow):
     # 用于点击“build”按钮，或者导入其他模型后，训练之前进行的操作
     def set_status_before_train(self):
         self.set_weight_menu(self.model.weights_list)
+        # 计算模型的参数数量
+        parameters_count = 0
+        for w in self.model.weights_list:
+            parameters_count += w.get_value().size
+        self.parametersEdit.setText(str(parameters_count))
         # 设置界面
-        self.editFrame.build_model()
-        self.buttonFrame.build_model()
+        self.ModelFrame.build_model()
+        self.TrainFrame.build_model()
         # 使能保存模型选项
         self.saveButton.setDisabled(False)
         # 清空 canvas 显示

@@ -2,12 +2,12 @@
 
 from PyQt4 import QtGui
 from PyQt4 import QtCore
-from my_controls import MyLabel, MyEdit, MyComboBox
+from my_controls import MyLabel, MyEdit, MyComboBox, MyButton
 
 
-class EditFrame(QtGui.QFrame):
+class ModelFrame(QtGui.QFrame):
     def __init__(self, *args):
-        super(EditFrame, self).__init__(*args)
+        super(ModelFrame, self).__init__(*args)
 
         # 初始化控件
         self.layerLabel = MyLabel('Layer Type:')
@@ -21,17 +21,16 @@ class EditFrame(QtGui.QFrame):
         self.innerUnitsLabel = MyLabel('Inner Units:')
         self.innerUnitsEdit = MyEdit(self)
 
-        self.lossFunctionLabel = MyLabel('Loss:')
-        self.lossComboBox = MyComboBox()
+        self.parametersLabel = MyLabel('Parameters:')
+        self.parametersEdit = MyEdit(self)
+        self.parametersEdit.setDisabled(True)
 
-        self.optimizerLabel = MyLabel('Optimizer:')
-        self.optimizerComboBox = MyComboBox()
+        self.buildButton = MyButton('Build\nModel', self)
 
-        self.learningRateLabel = MyLabel('learning Rate:')
-        self.learningRateEdit = MyEdit(self)
+        self.loadButton = MyButton('Load\nModel', self)
 
-        self.epochLabel = MyLabel('Epoch:')
-        self.epochEdit = MyEdit(self)
+        self.saveButton = MyButton('Save\nModel', self)
+        self.saveButton.setDisabled(True)
 
         grid = QtGui.QGridLayout()
 
@@ -41,15 +40,12 @@ class EditFrame(QtGui.QFrame):
         grid.addWidget(self.inputDimEdit, 1, 1, 1, 1)
         grid.addWidget(self.innerUnitsLabel, 2, 0, 1, 1, QtCore.Qt.AlignRight)
         grid.addWidget(self.innerUnitsEdit, 2, 1, 1, 1)
+        grid.addWidget(self.parametersLabel, 3, 0, 1, 1, QtCore.Qt.AlignRight)
+        grid.addWidget(self.parametersEdit, 3, 1, 1, 1)
 
-        grid.addWidget(self.lossFunctionLabel, 0, 2, 1, 1, QtCore.Qt.AlignRight)
-        grid.addWidget(self.lossComboBox, 0, 3, 1, 1)
-        grid.addWidget(self.optimizerLabel, 1, 2, 1, 1, QtCore.Qt.AlignRight)
-        grid.addWidget(self.optimizerComboBox, 1, 3, 1, 1)
-        grid.addWidget(self.learningRateLabel, 2, 2, 1, 1, QtCore.Qt.AlignRight)
-        grid.addWidget(self.learningRateEdit, 2, 3, 1, 1)
-        grid.addWidget(self.epochLabel, 3, 2, 1, 1, QtCore.Qt.AlignRight)
-        grid.addWidget(self.epochEdit, 3, 3, 1, 1)
+        grid.addWidget(self.buildButton, 0, 2, 2, 1)
+        grid.addWidget(self.loadButton, 2, 2, 2, 1)
+        grid.addWidget(self.saveButton, 2, 3, 2, 1)
 
         self.setLayout(grid)
         self.setFrameShape(QtGui.QFrame.StyledPanel)
