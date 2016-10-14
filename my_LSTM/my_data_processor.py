@@ -7,6 +7,10 @@ import time
 data_length = 100
 
 
+def target(list):
+    return np.mean(list)
+
+
 def csv_to_array(filename):
     train_data = []
     target_data = []

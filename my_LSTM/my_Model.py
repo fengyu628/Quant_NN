@@ -176,7 +176,7 @@ class MyRNNModel(object):
                 callback_dict = {'temp_error_list': temp_error_list}
                 # print('call back ....................')
                 self.callback(callback_dict)
-                    # 发送完后清空
+                # 发送完后清空
                 temp_error_list = []
 
         if self.callback and self.callback_enable is True:
