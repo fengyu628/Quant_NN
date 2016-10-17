@@ -36,5 +36,6 @@ def optimizer_sgd(layer, loss_function, weights_list):
 
     return f_loss, f_update
 
+
 def optimizer_other():
     pass

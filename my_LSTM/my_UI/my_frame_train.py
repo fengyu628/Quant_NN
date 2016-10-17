@@ -11,12 +11,14 @@ class TrainFrame(QtGui.QFrame):
         self.trainingFilesButton = QtGui.QPushButton('Training Files')
         self.trainingFilesButton.setFont(QtGui.QFont("Calibri", 10))
         self.trainingFilesEdit = MyEdit(self)
-        self.trainingFilesEdit.setDisabled(True)
+        self.trainingFilesEdit.setReadOnly(True)
+        # self.trainingFilesEdit.setDisabled(True)
 
         self.validateFilesButton = QtGui.QPushButton('Validate Files')
         self.validateFilesButton.setFont(QtGui.QFont("Calibri", 10))
         self.validateFilesEdit = MyEdit(self)
-        self.validateFilesEdit.setDisabled(True)
+        self.validateFilesEdit.setReadOnly(True)
+        # self.validateFilesEdit.setDisabled(True)
 
         self.lossFunctionLabel = MyLabel('Loss:')
         self.lossComboBox = MyComboBox()
@@ -45,9 +47,9 @@ class TrainFrame(QtGui.QFrame):
         grid = QtGui.QGridLayout()
 
         grid.addWidget(self.trainingFilesButton, 0, 0, 1, 1)
-        grid.addWidget(self.trainingFilesEdit, 0, 1, 1, 1)
+        grid.addWidget(self.trainingFilesEdit, 0, 1, 1, 3)
         grid.addWidget(self.validateFilesButton, 1, 0, 1, 1)
-        grid.addWidget(self.validateFilesEdit, 1, 1, 1, 1)
+        grid.addWidget(self.validateFilesEdit, 1, 1, 1, 3)
         grid.addWidget(self.lossFunctionLabel, 2, 0, 1, 1, QtCore.Qt.AlignRight)
         grid.addWidget(self.lossComboBox, 2, 1, 1, 1)
         grid.addWidget(self.optimizerLabel, 3, 0, 1, 1, QtCore.Qt.AlignRight)
@@ -57,21 +59,24 @@ class TrainFrame(QtGui.QFrame):
         grid.addWidget(self.epochLabel, 5, 0, 1, 1, QtCore.Qt.AlignRight)
         grid.addWidget(self.epochEdit, 5, 1, 1, 1)
 
-        grid.addWidget(self.trainButton, 0, 2, 2, 1)
-        grid.addWidget(self.pauseTrainButton, 0, 3, 2, 1)
-        grid.addWidget(self.resumeTrainButton, 2, 2, 2, 1)
-        grid.addWidget(self.stopTrainButton, 2, 3, 2, 1)
+        grid.addWidget(self.trainButton, 2, 2, 2, 1)
+        grid.addWidget(self.pauseTrainButton, 2, 3, 2, 1)
+        grid.addWidget(self.resumeTrainButton, 4, 2, 2, 1)
+        grid.addWidget(self.stopTrainButton, 4, 3, 2, 1)
 
         self.setLayout(grid)
         self.setFrameShape(QtGui.QFrame.StyledPanel)
 
     def build_model(self):
-        # 把按钮禁用掉
-        self.buildButton.setDisabled(True)
         # 使能训练按钮
         self.trainButton.setDisabled(False)
 
     def train_model(self):
+        # 训练开始后，训练参数不再允许更改
+        self.lossComboBox.setDisabled(True)
+        self.optimizerComboBox.setDisabled(True)
+        self.learningRateEdit.setDisabled(True)
+        self.epochEdit.setDisabled(True)
         # 把按钮禁用掉
         self.trainButton.setDisabled(True)
         # 使能停止训练按钮

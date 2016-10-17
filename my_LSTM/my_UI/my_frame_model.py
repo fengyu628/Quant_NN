@@ -55,10 +55,5 @@ class ModelFrame(QtGui.QFrame):
         self.layerComboBox.setDisabled(True)
         self.inputDimEdit.setDisabled(True)
         self.innerUnitsEdit.setDisabled(True)
-
-    def train_model(self):
-        # 训练开始后，训练参数不再允许更改
-        self.lossComboBox.setDisabled(True)
-        self.optimizerComboBox.setDisabled(True)
-        self.learningRateEdit.setDisabled(True)
-        self.epochEdit.setDisabled(True)
+        # 把按钮禁用掉
+        self.buildButton.setDisabled(True)

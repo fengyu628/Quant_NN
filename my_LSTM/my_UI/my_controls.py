@@ -14,7 +14,7 @@ class MyEdit(QtGui.QLineEdit):
     def __init__(self, *args):
         super(MyEdit, self).__init__(*args)
         self.setFont(QtGui.QFont("Calibri", 10))
-        self.setFixedSize(100, 20)
+        # self.setFixedSize(100, 20)
 
 
 class MyComboBox(QtGui.QComboBox):

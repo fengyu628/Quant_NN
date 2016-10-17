@@ -21,9 +21,10 @@ from my_frame_canvas import CanvasFrame
 from my_LSTM import my_layer
 from my_LSTM import my_loss
 from my_LSTM import my_optimizer
+from my_LSTM.my_data_processor import csv_file_to_train_data
 
 # _fromUtf8 = QtCore.QString.fromUtf8
-
+canvas_show_max_length = 1000
 
 class WeightMenuButton(QtGui.QAction):
     """
@@ -182,6 +183,10 @@ class MainWindow(QtGui.QMainWindow):
         
         self.set_status_before_train()
 
+        # 用于调试
+        self.training_files()
+        self.validate_files()
+
     # 开始训练模型
     @QtCore.pyqtSlot()
     def train_model(self):
@@ -198,7 +203,6 @@ class MainWindow(QtGui.QMainWindow):
                                       QtGui.QMessageBox.Close)
             return
 
-        self.ModelFrame.train_model()
         self.TrainFrame.train_model()
 
         # 启动线程
@@ -302,18 +306,53 @@ class MainWindow(QtGui.QMainWindow):
 
     @QtCore.pyqtSlot()
     def training_files(self):
-        print('training_files')
-        files = QtGui.QFileDialog.getOpenFileNames(self,
-                                                   "Select training files",
-                                                   "..",
-                                                   "CSV Files (*.csv);;All Files (*)")
-        for file in files:
-            print(file)
-        self.trainingFilesEdit.setText('%d files selected' % len(files))
+        # files = QtGui.QFileDialog.getOpenFileNames(self,
+        #                                            "Select training files",
+        #                                            "..",
+        #                                            "CSV Files (*.csv);;All Files (*)")
+        files = ['E:\\_Quant_NN\\training_files\\fu02_20081203.csv']
+        # 每次选择文件时，都清空数组，重新生成
+        self.model.train_x = []
+        self.model.train_y = []
+        for index, file in enumerate(files):
+            # 从文件生成训练数据
+            x_array, y_array = csv_file_to_train_data(file)
+            print(x_array.shape, y_array.shape)
+            if len(self.model.train_x) == 0:
+                self.model.train_x = x_array
+            else:
+                self.model.train_x = np.append(self.model.train_x, x_array, axis=0)
+            if len(self.model.train_y) == 0:
+                self.model.train_y = y_array
+            else:
+                self.model.train_y = np.append(self.model.train_y, y_array, axis=0)
+        print(np.asarray(self.model.train_x).shape, np.asarray(self.model.train_y).shape)
+        self.trainingFilesEdit.setText('%d files,  %d train data' % (len(files), len(self.model.train_x)))
 
     @QtCore.pyqtSlot()
     def validate_files(self):
-        print('validate_files')
+        # files = QtGui.QFileDialog.getOpenFileNames(self,
+        #                                            "Select validate files",
+        #                                            "..",
+        #                                            "CSV Files (*.csv);;All Files (*)")
+        files = ['E:\\_Quant_NN\\training_files\\fu02_20081203.csv']
+        # 每次选择文件时，都清空数组，重新生成
+        self.model.validate_x = []
+        self.model.validate_y = []
+        for index, file in enumerate(files):
+            # 从文件生成训练数据
+            x_array, y_array = csv_file_to_train_data(file)
+            print(x_array.shape, y_array.shape)
+            if len(self.model.validate_x) == 0:
+                self.model.validate_x = x_array
+            else:
+                self.model.validate_x = np.append(self.model.validate_x, x_array, axis=0)
+            if len(self.model.validate_y) == 0:
+                self.model.validate_y = y_array
+            else:
+                self.model.validate_y = np.append(self.model.validate_y, y_array, axis=0)
+        print(np.asarray(self.model.validate_x).shape, np.asarray(self.model.validate_y).shape)
+        self.validateFilesEdit.setText('%d files,  %d validate data' % (len(files), len(self.model.validate_x)))
 
     # *************************************************** 其他函数 ******************************************************
 
@@ -374,6 +413,12 @@ class MainWindow(QtGui.QMainWindow):
             for loss in temp_loss_list:
                 self.lossCanvas.value_list.append(loss)
             # print(len(self.lossCanvas.value_list))
+
+            # 仅仅保留最后的 canvas_show_max_length 个数据，用于显示
+            if len(self.lossCanvas.index_list) > canvas_show_max_length:
+                self.lossCanvas.index_list = self.lossCanvas.index_list[-canvas_show_max_length:-1]
+                self.lossCanvas.value_list = self.lossCanvas.value_list[-canvas_show_max_length:-1]
+
             self.lossCanvas.draw_enable_flag = True
 
         if 'temp_error_list' in callback_dict:
@@ -391,6 +436,12 @@ class MainWindow(QtGui.QMainWindow):
             for error in temp_error_list:
                 self.errorCanvas.value_list.append(error)
             # print(len(self.errorCanvas.value_list))
+
+            # 仅仅保留最后的 canvas_show_max_length 个数据，用于显示
+            if len(self.errorCanvas.index_list) > canvas_show_max_length:
+                self.errorCanvas.index_list = self.errorCanvas.index_list[-canvas_show_max_length:-1]
+                self.errorCanvas.value_list = self.errorCanvas.value_list[-canvas_show_max_length:-1]
+
             self.errorCanvas.draw_enable_flag = True
 
         if 'train_end' in callback_dict:

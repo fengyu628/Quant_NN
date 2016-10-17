@@ -1,6 +1,6 @@
 # coding:utf-8
 
-# import numpy as np
+import numpy as np
 # import theano
 # import theano.tensor as tensor
 # from theano import config
@@ -17,11 +17,11 @@ class MyRNNModel(object):
     """
     def __init__(self,
                  layer_type=Layer_LSTM,
-                 input_dim=2,
+                 input_dim=9,
                  inner_units=20,
                  loss=loss_variance,
                  optimizer=optimizer_sgd,
-                 learning_rate=0.001,
+                 learning_rate=0.05,
                  epoch=100
                  ):
         super(MyRNNModel, self).__init__()
@@ -41,11 +41,22 @@ class MyRNNModel(object):
         self.pause_train_flag = False
         self.stop_train_flag = False
 
+        self.train_x = []
+        self.train_y = []
+        self.validate_x = []
+        self.validate_y = []
+
+    # 在保存模型之前需要做的操作
     def set_status_before_save(self):
         self.callback = None
         self.callback_enable = True
         self.pause_train_flag = False
         self.stop_train_flag = False
+        # 不保存训练数据
+        self.train_x = []
+        self.train_y = []
+        self.validate_x = []
+        self.validate_y = []
 
     # 生成模型实体，以及权值
     def build_layer(self):
@@ -53,35 +64,38 @@ class MyRNNModel(object):
         self.weights_list = self.layer.get_weight_list()
 
     # 制作layer输出函数
-    @staticmethod
-    def make_function_layer_output(layer):
+    # @staticmethod
+    def make_function_layer_output(self):
         x_symbol = tensor.matrix(name='scan_input')
         print('make output function')
-        return theano.function([x_symbol], layer(x_symbol), name='f_out')
+        return theano.function([x_symbol], self.layer(x_symbol), name='f_out')
 
     # 把数据切成用于训练的小段
-    @staticmethod
-    def slice_data(data_to_slice, slice_length):
-        list_length = 0
-        x_list = []
-        y_list = []
-        for i in range(len(data_to_slice) - slice_length - 6):
-            x_list.append(data_to_slice[i:i+slice_length, ])
-            y_list.append(data_to_slice[i+slice_length+5, 0])
-            list_length += 1
-        return x_list, y_list, list_length
+    # @staticmethod
+    # def slice_data(data_to_slice, slice_length):
+    #     list_length = 0
+    #     x_list = []
+    #     y_list = []
+    #     for i in range(len(data_to_slice) - slice_length - 6):
+    #         x_list.append(data_to_slice[i:i+slice_length, ])
+    #         y_list.append(data_to_slice[i+slice_length+5, 0])
+    #         list_length += 1
+    #     return x_list, y_list, list_length
 
     # 计算验证误差
-    @staticmethod
-    def error_valid(x_lise, y_list, list_length, layer_compute_function, loss_function):
+    # @staticmethod
+    def error_valid(self, x_list, y_list, layer_compute_function):
+        if len(x_list) != len(y_list):
+            print('len(x) != len(y)')
+            return
         error = 0.
-        for i in range(list_length):
-            x = x_lise[i]
+        for i in range(len(y_list)):
+            x = x_list[i]
             y = y_list[i]
             out = layer_compute_function(x)
-            loss_valid = loss_function(out, y)
+            loss_valid = self.loss(out, y)
             error += loss_valid
-        error /= float(list_length)
+        error /= float(len(y_list))
         return error
 
     # 设置回调函数，在权值更新的调用
@@ -104,22 +118,34 @@ class MyRNNModel(object):
     # 训练模型
     def train(self):
 
-        file_train_data = '..\\data\\sin.txt'
-        file_valid_data = '..\\data\\sin2.txt'
-        file_weights_saved = '..\\data\\LSTM_weights'
-
-        data_train = np.loadtxt(file_train_data).astype(config.floatX)
-        data_valid = np.loadtxt(file_valid_data).astype(config.floatX)
+        # file_train_data = '..\\data\\sin.txt'
+        # file_valid_data = '..\\data\\sin2.txt'
+        # file_weights_saved = '..\\data\\LSTM_weights'
+        #
+        # data_train = np.loadtxt(file_train_data).astype(config.floatX)
+        # data_valid = np.loadtxt(file_valid_data).astype(config.floatX)
 
         # 生成layer输出函数
-        function_layer_output = self.make_function_layer_output(self.layer)
+        function_layer_output = self.make_function_layer_output()
         # 生成损失计算函数和权值更新函数
         function_compute_loss, function_update_weights = self.optimizer(self.layer, self.loss, self.weights_list)
 
         # 生成测试数据
-        x_length = 20
-        x_train_list, y_train_list, train_list_length = self.slice_data(data_train, x_length)
-        x_valid_lise, y_valid_list, valid_list_length = self.slice_data(data_valid, x_length)
+        # x_length = 20
+        # x_train_list, y_train_list, train_list_length = self.slice_data(data_train, x_length)
+        # x_valid_list, y_valid_list, valid_list_length = self.slice_data(data_valid, x_length)
+
+        x_train_list = self.train_x
+        y_train_list = self.train_y
+        x_valid_list = self.validate_x
+        y_valid_list = self.validate_y
+
+        if len(x_train_list) != len(y_train_list):
+            print('train: x length is not equal to y length')
+            return
+        if len(x_valid_list) != len(y_valid_list):
+            print('validate: x length is not equal to y length')
+            return
 
         temp_loss_list = []
         temp_error_list = []
@@ -127,7 +153,7 @@ class MyRNNModel(object):
         for epoch_index in range(self.epoch):
             print('========== epoch: %d ==========' % epoch_index)
             t = time.time()
-            for train_index in range(train_list_length):
+            for train_index in range(len(y_train_list)):
                 # 根据标志位判断是否停止训练
                 if self.stop_train_flag is True:
                     print('Stop train!')
@@ -147,11 +173,10 @@ class MyRNNModel(object):
 
                 # 计算目标函数
                 loss = function_compute_loss(x_train, y_train)
-                if train_index % 20 == 0:
+
+                if train_index % 100 == 0:
                     print('train_index: %d' % train_index)
                     print('loss: %f' % loss)
-                    # if self.callback:
-                    #     self.callback(self.weights_list)
 
                 # 更新权值
                 function_update_weights(self.learning_rate)
@@ -167,7 +192,8 @@ class MyRNNModel(object):
                     temp_loss_list = []
 
             # 计算验证误差
-            err = self.error_valid(x_valid_lise, y_valid_list, valid_list_length, function_layer_output, loss_variance)
+            print('computing error ...')
+            err = self.error_valid(x_valid_list, y_valid_list, function_layer_output)
             print('valid error: %f' % err)
             print('time use: %f' % (time.time() - t))
             temp_error_list.append(float(err))
@@ -185,8 +211,8 @@ class MyRNNModel(object):
             self.callback(callback_dict)
 
         # 保存训练完的权值
-        np.savez(file_weights_saved, self.weights_list)
-        print('weights saved')
+        # np.savez(file_weights_saved, self.weights_list)
+        # print('weights saved')
 
 # ======================================================================================================================
 # ======================================================================================================================
