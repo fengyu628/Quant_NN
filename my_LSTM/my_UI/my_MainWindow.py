@@ -75,6 +75,11 @@ class MainWindow(QtGui.QMainWindow):
         self.weightMenu.setDisabled(True)
         self.weightMenuItems = []
 
+        # 初始化 “Grads” 菜单
+        self.gradMenu = menu_bar.addMenu('Grads')
+        self.gradMenu.setDisabled(True)
+        self.gradMenuItems = []
+
         self.ModelFrame = ModelFrame()
         self.layerComboBox = self.ModelFrame.layerComboBox
         self.inputDimEdit = self.ModelFrame.inputDimEdit
@@ -156,12 +161,16 @@ class MainWindow(QtGui.QMainWindow):
         self.train_paused_flag = False
         self.stop_draw_canvas_thread_flag = False
 
-        self.charts = []
+        self.weight_charts = []
+        self.grad_charts = []
 
         # 创建模型
         self.model = model()
         # 设置模型相关参数
         self.set_parameters_related_to_mode()
+
+        #
+        self.build_model()
 
     # *********************************************** 消息处理函数 ******************************************************
 
@@ -238,31 +247,65 @@ class MainWindow(QtGui.QMainWindow):
 
     # 生成图表，并显示相应的权值
     @QtCore.pyqtSlot()
-    def show_chart(self, weight_index):
-        chart = Chart(self.model.weights_list[weight_index], weight_index)
-        self.connect(chart, QtCore.SIGNAL('closeChartWithWeightIndex(int)'), self.close_chart_event)
-        self.charts.append(chart)
-        chart.show_weight(self.model.weights_list[weight_index])
-        chart.show()
+    def show_weight_chart(self, weight_index):
+        weight_chart = Chart((self.model.weights_list[weight_index]).name,
+                      (self.model.weights_list[weight_index]).get_value(),
+                      weight_index)
+        self.connect(weight_chart, QtCore.SIGNAL('closeChartWithIndex(int)'), self.close_weight_chart_event)
+        self.weight_charts.append(weight_chart)
+        weight_chart.show_content((self.model.weights_list[weight_index]).get_value())
+        weight_chart.show()
 
-    # 有 Chart 被关闭的事件处理
+    # 生成图表，并显示相应的梯度
     @QtCore.pyqtSlot()
-    def close_chart_event(self, weight_index):
-        print('chart weight index: %d' % weight_index)
-        for chart in self.charts:
-            if chart.weight_index == weight_index:
-                self.charts.remove(chart)
+    def show_grad_chart(self, grad_index):
+        chart_name = (self.model.weights_list[grad_index]).name + ' Grad'
+        grad_chart = Chart(chart_name,
+                           self.model.grads_list[grad_index],
+                           grad_index)
+        self.connect(grad_chart, QtCore.SIGNAL('closeChartWithIndex(int)'), self.close_grad_chart_event)
+        self.grad_charts.append(grad_chart)
+        grad_chart.show_content(self.model.grads_list[grad_index])
+        grad_chart.show()
+
+    # 有 Weight Chart 被关闭的事件处理
+    @QtCore.pyqtSlot()
+    def close_weight_chart_event(self, weight_index):
+        print('close weight chart of index: %d' % weight_index)
+        for chart in self.weight_charts:
+            if chart.index == weight_index:
+                self.weight_charts.remove(chart)
                 # 恢复权值菜单元素的使能
                 for item in self.weightMenuItems:
                     if item.index == weight_index:
                         item.setDisabled(False)
-        print('charts count:%d' % len(self.charts))
+        print('weight charts count:%d' % len(self.weight_charts))
 
-    # 关闭所有 Chart
+    # 有 Grad Chart 被关闭的事件处理
     @QtCore.pyqtSlot()
-    def close_all_charts(self):
-        self.charts = []
+    def close_grad_chart_event(self, grad_index):
+        print('close grad chart of index: %d' % grad_index)
+        for chart in self.grad_charts:
+            if chart.index == grad_index:
+                self.grad_charts.remove(chart)
+                # 恢复权值菜单元素的使能
+                for item in self.gradMenuItems:
+                    if item.index == grad_index:
+                        item.setDisabled(False)
+        print('grad charts count:%d' % len(self.grad_charts))
+
+    # 关闭所有 Weight Chart
+    @QtCore.pyqtSlot()
+    def close_all_weight_charts(self):
+        self.weight_charts = []
         for item in self.weightMenuItems:
+            item.setDisabled(False)
+
+    # 关闭所有 grad Chart
+    @QtCore.pyqtSlot()
+    def close_all_grad_charts(self):
+        self.grad_charts = []
+        for item in self.gradMenuItems:
             item.setDisabled(False)
 
     # 定时调用，用来显示训练时间
@@ -275,7 +318,7 @@ class MainWindow(QtGui.QMainWindow):
             # 暂停训练时，时间不再累计
             self.start_train_time = time.time()
         # 在状态栏上显示训练时间
-        self.statusRightLabel.setText(self.format_time_with_title(u'训练时间', self.training_time))
+        self.statusRightLabel.setText(self.format_time_with_title(u'训练用时', self.training_time))
 
     # 导入模型
     @QtCore.pyqtSlot()
@@ -393,10 +436,14 @@ class MainWindow(QtGui.QMainWindow):
     def deal_with_train_callback(self, callback_dict):
         # 关闭train的callback使能
         self.model.set_callback_enable(False)
+        # 使能梯度菜单
+        self.gradMenu.setDisabled(False)
         # t = time.time()
         # 更新窗口中的权值
-        for chart in self.charts:
-            chart.show_weight(self.model.weights_list[chart.weight_index])
+        for chart in self.weight_charts:
+            chart.show_content((self.model.weights_list[chart.index]).get_value())
+        for chart in self.grad_charts:
+            chart.show_content(self.model.grads_list[chart.index])
 
         if 'temp_loss_list' in callback_dict:
             temp_loss_list = callback_dict['temp_loss_list']
@@ -416,8 +463,8 @@ class MainWindow(QtGui.QMainWindow):
 
             # 仅仅保留最后的 canvas_show_max_length 个数据，用于显示
             if len(self.lossCanvas.index_list) > canvas_show_max_length:
-                self.lossCanvas.index_list = self.lossCanvas.index_list[-canvas_show_max_length:-1]
-                self.lossCanvas.value_list = self.lossCanvas.value_list[-canvas_show_max_length:-1]
+                self.lossCanvas.index_list = self.lossCanvas.index_list[-canvas_show_max_length:]
+                self.lossCanvas.value_list = self.lossCanvas.value_list[-canvas_show_max_length:]
 
             self.lossCanvas.draw_enable_flag = True
 
@@ -439,8 +486,8 @@ class MainWindow(QtGui.QMainWindow):
 
             # 仅仅保留最后的 canvas_show_max_length 个数据，用于显示
             if len(self.errorCanvas.index_list) > canvas_show_max_length:
-                self.errorCanvas.index_list = self.errorCanvas.index_list[-canvas_show_max_length:-1]
-                self.errorCanvas.value_list = self.errorCanvas.value_list[-canvas_show_max_length:-1]
+                self.errorCanvas.index_list = self.errorCanvas.index_list[-canvas_show_max_length:]
+                self.errorCanvas.value_list = self.errorCanvas.value_list[-canvas_show_max_length:]
 
             self.errorCanvas.draw_enable_flag = True
 
@@ -460,7 +507,7 @@ class MainWindow(QtGui.QMainWindow):
         # 恢复按钮
         # self.button.setDisabled(False)
 
-    # 初始化菜单栏
+    # 初始化权值菜单
     def set_weight_menu(self, weight_list):
         self.weightMenu.clear()
         self.weightMenuItems = []
@@ -469,18 +516,46 @@ class MainWindow(QtGui.QMainWindow):
             weight_button.set_index(weight_index)
             weight_button.setStatusTip('Show "' + weight.name + '" in new window')
             # 此处用了两个信号，是为了解决自带信号 triggered() 不能带参数的问题
-            self.connect(weight_button, QtCore.SIGNAL('triggered()'), weight_button.emit_f)
-            self.connect(weight_button, QtCore.SIGNAL('clickWeightMenuButtonWithWeightIndex(int)'), self.show_chart)
+            self.connect(weight_button,
+                         QtCore.SIGNAL('triggered()'),
+                         weight_button.emit_f)
+            self.connect(weight_button,
+                         QtCore.SIGNAL('clickWeightMenuButtonWithWeightIndex(int)'),
+                         self.show_weight_chart)
             self.weightMenu.addAction(weight_button)
             # 引用是为了后面恢复使能
             self.weightMenuItems.append(weight_button)
         self.weightMenu.addSeparator()
-        close_all_button = QtGui.QAction('close all charts', self)
-        close_all_button.setStatusTip('Close all charts')
-        self.connect(close_all_button, QtCore.SIGNAL('triggered()'), self.close_all_charts)
-        self.weightMenu.addAction(close_all_button)
+        close_all_weight_charts_button = QtGui.QAction('close all weight charts', self)
+        close_all_weight_charts_button.setStatusTip('Close all weight charts')
+        self.connect(close_all_weight_charts_button, QtCore.SIGNAL('triggered()'), self.close_all_weight_charts)
+        self.weightMenu.addAction(close_all_weight_charts_button)
         # 使能菜单
         self.weightMenu.setDisabled(False)
+
+    #
+    def set_grad_menu(self, weight_list):
+        self.gradMenu.clear()
+        self.gradMenuItems = []
+        for weight_index, weight in enumerate(weight_list):
+            grad_button = WeightMenuButton('&%s Grad' % weight.name, self)
+            grad_button.set_index(weight_index)
+            grad_button.setStatusTip('Show grad of "' + weight.name + '" in new window')
+            # 此处用了两个信号，是为了解决自带信号 triggered() 不能带参数的问题
+            self.connect(grad_button,
+                         QtCore.SIGNAL('triggered()'),
+                         grad_button.emit_f)
+            self.connect(grad_button,
+                         QtCore.SIGNAL('clickWeightMenuButtonWithWeightIndex(int)'),
+                         self.show_grad_chart)
+            self.gradMenu.addAction(grad_button)
+            # 引用是为了后面恢复使能
+            self.gradMenuItems.append(grad_button)
+        self.gradMenu.addSeparator()
+        close_all_grad_charts_button = QtGui.QAction('close all grad charts', self)
+        close_all_grad_charts_button.setStatusTip('Close all grad charts')
+        self.connect(close_all_grad_charts_button, QtCore.SIGNAL('triggered()'), self.close_all_grad_charts)
+        self.gradMenu.addAction(close_all_grad_charts_button)
 
     # 初始化下拉菜单
     def init_combo_box(self):
@@ -523,6 +598,7 @@ class MainWindow(QtGui.QMainWindow):
     # 用于点击“build”按钮，或者导入其他模型后，训练之前进行的操作
     def set_status_before_train(self):
         self.set_weight_menu(self.model.weights_list)
+        self.set_grad_menu(self.model.weights_list)
         # 计算模型的参数数量
         parameters_count = 0
         for w in self.model.weights_list:

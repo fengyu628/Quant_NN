@@ -20,8 +20,8 @@ def csv_file_to_train_data(filename):
     return csv_array_to_train_data(csv_file_to_array(filename))
 
 
-def compute_target_from_y_array(y):
-    return np.mean(y)
+def compute_target_from_y_array(y_list):
+    return np.mean(y_list)
 
 
 def csv_file_to_array(filename):
@@ -88,8 +88,11 @@ def csv_array_to_train_data(array):
         # print(index, y_data, y_list)
         train_x_array.append(x_data)
         train_y_array.append(y_data)
-    return np.asarray(train_x_array).astype(config.floatX), np.asarray(train_y_array).astype(config.floatX)
-
+    # 在训练数据中去掉时间戳
+    x_result = np.asarray(train_x_array)[:, :, 1:9].astype(config.floatX)
+    y_result = np.asarray(train_y_array).astype(config.floatX)
+    # print(x_result.shape, y_result.shape)
+    return x_result, y_result
 
 ########################################################################################
 

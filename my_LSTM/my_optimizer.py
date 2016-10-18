@@ -17,7 +17,7 @@ def optimizer_sgd(layer, loss_function, weights_list):
     # 计算梯度
     grads = tensor.grad(loss_symbol, wrt=weights_list)
 
-    grads_shared = [theano.shared(p.get_value() * 0.) for p in weights_list]
+    grads_shared = [theano.shared(p.get_value() * 0., name=p.name) for p in weights_list]
     grads_update = [(gs, g) for gs, g in zip(grads_shared, grads)]
     # 制作损失函数
     print('make loss function')
@@ -30,7 +30,7 @@ def optimizer_sgd(layer, loss_function, weights_list):
     weights_update = [(p, p - lr_symbol*g) for p, g in zip(weights_list, grads_shared)]
     # 制作权值更新函数
     print('make update function')
-    f_update = theano.function([lr_symbol], [],
+    f_update = theano.function([lr_symbol], grads_shared,
                                updates=weights_update,
                                name='sgd_f_update')
 

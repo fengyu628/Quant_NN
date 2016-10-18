@@ -1,6 +1,6 @@
 # coding:utf-8
 
-import numpy as np
+# import numpy as np
 # import theano
 # import theano.tensor as tensor
 # from theano import config
@@ -17,7 +17,7 @@ class MyRNNModel(object):
     """
     def __init__(self,
                  layer_type=Layer_LSTM,
-                 input_dim=9,
+                 input_dim=8,
                  inner_units=20,
                  loss=loss_variance,
                  optimizer=optimizer_sgd,
@@ -46,6 +46,8 @@ class MyRNNModel(object):
         self.validate_x = []
         self.validate_y = []
 
+        self.grads_list = []
+
     # 在保存模型之前需要做的操作
     def set_status_before_save(self):
         self.callback = None
@@ -58,29 +60,21 @@ class MyRNNModel(object):
         self.validate_x = []
         self.validate_y = []
 
+        self.grads_list = []
+
     # 生成模型实体，以及权值
     def build_layer(self):
+        # 实例化模型
         self.layer = self.layer_type(self.input_dim, self.inner_units)
         self.weights_list = self.layer.get_weight_list()
 
     # 制作layer输出函数
     # @staticmethod
     def make_function_layer_output(self):
-        x_symbol = tensor.matrix(name='scan_input')
         print('make output function')
-        return theano.function([x_symbol], self.layer(x_symbol), name='f_out')
-
-    # 把数据切成用于训练的小段
-    # @staticmethod
-    # def slice_data(data_to_slice, slice_length):
-    #     list_length = 0
-    #     x_list = []
-    #     y_list = []
-    #     for i in range(len(data_to_slice) - slice_length - 6):
-    #         x_list.append(data_to_slice[i:i+slice_length, ])
-    #         y_list.append(data_to_slice[i+slice_length+5, 0])
-    #         list_length += 1
-    #     return x_list, y_list, list_length
+        x_symbol = tensor.matrix(name='scan_input')
+        y_symbol = self.layer(x_symbol)
+        return theano.function([x_symbol], y_symbol, name='f_out')
 
     # 计算验证误差
     # @staticmethod
@@ -117,24 +111,6 @@ class MyRNNModel(object):
 
     # 训练模型
     def train(self):
-
-        # file_train_data = '..\\data\\sin.txt'
-        # file_valid_data = '..\\data\\sin2.txt'
-        # file_weights_saved = '..\\data\\LSTM_weights'
-        #
-        # data_train = np.loadtxt(file_train_data).astype(config.floatX)
-        # data_valid = np.loadtxt(file_valid_data).astype(config.floatX)
-
-        # 生成layer输出函数
-        function_layer_output = self.make_function_layer_output()
-        # 生成损失计算函数和权值更新函数
-        function_compute_loss, function_update_weights = self.optimizer(self.layer, self.loss, self.weights_list)
-
-        # 生成测试数据
-        # x_length = 20
-        # x_train_list, y_train_list, train_list_length = self.slice_data(data_train, x_length)
-        # x_valid_list, y_valid_list, valid_list_length = self.slice_data(data_valid, x_length)
-
         x_train_list = self.train_x
         y_train_list = self.train_y
         x_valid_list = self.validate_x
@@ -146,6 +122,11 @@ class MyRNNModel(object):
         if len(x_valid_list) != len(y_valid_list):
             print('validate: x length is not equal to y length')
             return
+
+        # 生成layer输出函数
+        function_layer_output = self.make_function_layer_output()
+        # 生成损失计算函数和权值更新函数
+        function_compute_loss, function_update_weights = self.optimizer(self.layer, self.loss, self.weights_list)
 
         temp_loss_list = []
         temp_error_list = []
@@ -177,9 +158,17 @@ class MyRNNModel(object):
                 if train_index % 100 == 0:
                     print('train_index: %d' % train_index)
                     print('loss: %f' % loss)
+                    # print('grads:\n', grads)
 
                 # 更新权值
-                function_update_weights(self.learning_rate)
+                self.grads_list = function_update_weights(self.learning_rate)
+                if train_index % 10 == 0:
+                    print('*********** grads ***********')
+                    print(id(self.weights_list))
+                    print(id(self.layer.weights_list))
+                    print(id(self.grads_list))
+                    # for grad in grads:
+                    #     print(grad)
                 # 发送loss的列表,此处如果不加‘float’，temp_loss_list会变成array(XXXX)
                 temp_loss_list.append(float(loss))
                 # 调用回调函数
@@ -219,7 +208,41 @@ class MyRNNModel(object):
 
 if __name__ == '__main__':
 
-    # model = MyRNNModel(layer_type=LSTM, input_dim=2, inner_units=20)
-    # model.train(optimizer=sgd, loss=loss_variance, learning_rate=0.001, epoch=100)
-    model = MyRNNModel()
+    # 把数据切成用于训练的小段
+    def slice_data(data_to_slice, slice_length):
+        list_length = 0
+        x_list = []
+        y_list = []
+        for i in range(len(data_to_slice) - slice_length - 6):
+            x_list.append(data_to_slice[i:i + slice_length, ])
+            y_list.append(data_to_slice[i + slice_length + 5, 0])
+            list_length += 1
+        return x_list, y_list
+
+    file_train_data = '..\\data\\sin.txt'
+    file_valid_data = '..\\data\\sin2.txt'
+    # file_weights_saved = '..\\data\\LSTM_weights'
+
+    data_train = np.loadtxt(file_train_data).astype(config.floatX)
+    data_valid = np.loadtxt(file_valid_data).astype(config.floatX)
+
+    # 生成测试数据
+    x_length = 20
+    x_train_array, y_train_array = slice_data(data_train, x_length)
+    x_valid_array, y_valid_array = slice_data(data_valid, x_length)
+
+    model = MyRNNModel(layer_type=Layer_LSTM,
+                       input_dim=2,
+                       inner_units=20,
+                       loss=loss_variance,
+                       optimizer=optimizer_sgd,
+                       learning_rate=0.05,
+                       epoch=100)
+
+    model.train_x = x_train_array
+    model.train_y = y_train_array
+    model.validate_x = x_valid_array
+    model.validate_y = y_valid_array
+
+    model.build_layer()
     model.train()

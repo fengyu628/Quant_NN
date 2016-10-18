@@ -11,8 +11,9 @@ class Chart(QtGui.QWidget):
     单独的窗口，用来显示一个权值矩阵
     """
     def __init__(self, 
-                 weight_t, 
-                 weight_index, 
+                 name,
+                 content,
+                 index,
                  image_scalar_factor=20,
                  x_gap=40,
                  y_gap=80,
@@ -20,8 +21,9 @@ class Chart(QtGui.QWidget):
                  min_width=260,
                  parent=None):
         """
-        :param weight_t: theano 格式的权值矩阵
-        :param weight_index: weight_t 在 weight_list 中的下标
+        :param name: 名称
+        :param content: 内容
+        :param index: content_t 在 content_list 中的下标
         :param image_scalar_factor: 每个权值在图片上占用的边长
         :param x_gap: 图片与窗口之间的空白量，宽度方向
         :param y_gap: 图片与窗口之间的空白量，高度方向
@@ -31,18 +33,18 @@ class Chart(QtGui.QWidget):
         """
         super(Chart, self).__init__(parent)
 
-        self.weight_name = weight_t.name
-        self.weight_index = weight_index
-        self.weight_shape = weight_t.get_value().shape
+        self.name = name
+        self.index = index
+        self.shape = content.shape
 
-        self.setWindowTitle(self.weight_name)
+        self.setWindowTitle(self.name)
 
-        self.title_label = QtGui.QLabel(self.weight_name)
+        self.title_label = QtGui.QLabel(self.name)
         # self.title_label.setFont(QtGui.QFont("Arial", 12, QtGui.QFont.Bold))
         self.title_label.setFont(QtGui.QFont("Calibri", 13))
         self.title_label.setAlignment(QtCore.Qt.AlignCenter)
 
-        self.image_label = QtGui.QLabel('weight_image')
+        self.image_label = QtGui.QLabel('content_image')
         self.image_label.setAlignment(QtCore.Qt.AlignCenter)
         self.image = None
 
@@ -50,11 +52,11 @@ class Chart(QtGui.QWidget):
         self.detail_label.setFont(QtGui.QFont("Calibri", 13))
         self.detail_label.setAlignment(QtCore.Qt.AlignCenter)
 
-        vbox = QtGui.QVBoxLayout()
-        vbox.addWidget(self.title_label)
-        vbox.addWidget(self.image_label)
-        vbox.addWidget(self.detail_label)
-        self.setLayout(vbox)
+        v_box = QtGui.QVBoxLayout()
+        v_box.addWidget(self.title_label)
+        v_box.addWidget(self.image_label)
+        v_box.addWidget(self.detail_label)
+        self.setLayout(v_box)
 
         # 设置窗口大小
         self.image_scalar_factor = image_scalar_factor
@@ -62,24 +64,24 @@ class Chart(QtGui.QWidget):
         self.y_gap = y_gap
         self.max_width = max_width
         self.min_width = min_width
-        # weight 为权值矩阵
-        if len(self.weight_shape) == 2:
-            x_size = int(self.weight_shape[1]) * self.image_scalar_factor + self.x_gap
+        # content 为权值矩阵
+        if len(self.shape) == 2:
+            x_size = int(self.shape[1]) * self.image_scalar_factor + self.x_gap
             # 设置最大窗口宽度
             if x_size > self.max_width:
                 x_size = self.max_width
-                self.image_scalar_factor = float(self.max_width - self.x_gap) / self.weight_shape[1]
+                self.image_scalar_factor = float(self.max_width - self.x_gap) / self.shape[1]
                 print(self.image_scalar_factor)
-            y_size = int(self.weight_shape[0]) * self.image_scalar_factor + self.y_gap
-        # weight 为权值向量
-        elif len(self.weight_shape) == 1:
-            x_size = int(self.weight_shape[0]) * self.image_scalar_factor + self.x_gap
+            y_size = int(self.shape[0]) * self.image_scalar_factor + self.y_gap
+        # content 为权值向量
+        elif len(self.shape) == 1:
+            x_size = int(self.shape[0]) * self.image_scalar_factor + self.x_gap
             # 设置最大窗口宽度
             if x_size > self.max_width:
                 x_size = self.max_width
-                self.image_scalar_factor = float(self.max_width - self.x_gap) / self.weight_shape[0]
+                self.image_scalar_factor = float(self.max_width - self.x_gap) / self.shape[0]
             y_size = 1 * self.image_scalar_factor + self.y_gap
-        # weight 为权值标量
+        # content 为权值标量
         else:
             x_size = 1 * self.image_scalar_factor + self.x_gap
             y_size = 1 * self.image_scalar_factor + self.y_gap
@@ -91,40 +93,39 @@ class Chart(QtGui.QWidget):
         # print('x size:%d, y size:%d' % (x_size, y_size))
         self.setFixedSize(x_size, y_size)
 
-    def show_weight(self, weight_t):
+    def show_content(self, content):
         """
         显示权值
-        :param weight_t: theano 格式的权值矩阵
+        :param content: 需要显示的内容
         :return:
         """
-        weight = weight_t.get_value()
         # 权值矩阵
-        if len(weight.shape) == 2:
-            h = weight.shape[0]
-            w = weight.shape[1]
-            weight_array = np.asarray(weight)
+        if len(content.shape) == 2:
+            h = content.shape[0]
+            w = content.shape[1]
+            content_array = np.asarray(content)
         # 权值向量
-        elif len(weight.shape) == 1:
+        elif len(content.shape) == 1:
             h = 1
-            w = weight.shape[0]
-            weight_array = np.asarray([weight])
+            w = content.shape[0]
+            content_array = np.asarray([content])
         # 权值标量
         else:
             h = 1
             w = 1
-            weight_array = np.asarray([[weight]])
+            content_array = np.asarray([[content]])
 
-        weight_min = np.min(weight_array)
-        weight_max = np.max(weight_array)
+        content_min = np.min(content_array)
+        content_max = np.max(content_array)
 
         # 设置窗口显示的最大最小值
-        detail_show = "min: %f   max: %f" % (weight_min, weight_max)
+        detail_show = "min: %f   max: %f" % (content_min, content_max)
         self.detail_label.setText(detail_show)
 
         # 把权值转换成0到255之间的整数，用于图像显示
-        weight_to_show = weight_array - weight_min
-        scalar_factor = 255 / (weight_max - weight_min)
-        array_float64 = (weight_to_show * scalar_factor) // 1
+        content_to_show = content_array - content_min
+        scalar_factor = 255 / (content_max - content_min)
+        array_float64 = (content_to_show * scalar_factor) // 1
         # print(array_float64.min(), array_float64.max())
         # float64 转换成 int8
         array_uint8 = array_float64.astype(np.uint8)
@@ -156,6 +157,6 @@ class Chart(QtGui.QWidget):
     #     super(Chart, self).close()
 
     def closeEvent(self, e):
-        print('close %s' % self.weight_name)
-        self.emit(QtCore.SIGNAL('closeChartWithWeightIndex(int)'), self.weight_index)
+        print('close %s' % self.name)
+        self.emit(QtCore.SIGNAL('closeChartWithIndex(int)'), self.index)
         super(Chart, self).closeEvent(e)

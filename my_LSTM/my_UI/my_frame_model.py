@@ -23,7 +23,7 @@ class ModelFrame(QtGui.QFrame):
 
         self.parametersLabel = MyLabel('Parameters:')
         self.parametersEdit = MyEdit(self)
-        self.parametersEdit.setDisabled(True)
+        self.parametersEdit.setReadOnly(True)
 
         self.buildButton = MyButton('Build\nModel', self)
 
