@@ -26,24 +26,25 @@ from my_LSTM.my_data_processor import csv_file_to_train_data
 # _fromUtf8 = QtCore.QString.fromUtf8
 canvas_show_max_length = 1000
 
-class WeightMenuButton(QtGui.QAction):
+class MenuButton(QtGui.QAction):
     """
     重写菜单栏的项目。
     用来实现，在被触发时，发射带参数的信号，而且这个参数是和该项目绑定的。
     """
     def __init__(self, *args):
-        super(WeightMenuButton, self).__init__(*args)
+        super(MenuButton, self).__init__(*args)
         self.name = None
         self.index = 0
 
-    # 这个 index 和 weight_list 的顺序相对应，用于调取相应的权值
+    # 这个 index 和 weight_list 、grad_list 的顺序相对应，用于调取相应的权值和梯度
     def set_index(self, index):
         self.index = index
 
-    # 发射带有权值序号的信号
+    # 发射带有序号的信号
     def emit_f(self):
-        self.emit(QtCore.SIGNAL('clickWeightMenuButtonWithWeightIndex(int)'), self.index)
+        self.emit(QtCore.SIGNAL('clickMenuButtonWithIndex(int)'), self.index)
         self.setDisabled(True)
+
 
 
 class MainWindow(QtGui.QMainWindow):
@@ -169,7 +170,7 @@ class MainWindow(QtGui.QMainWindow):
         # 设置模型相关参数
         self.set_parameters_related_to_mode()
 
-        #
+        # ------- 调试 -------
         self.build_model()
 
     # *********************************************** 消息处理函数 ******************************************************
@@ -192,7 +193,7 @@ class MainWindow(QtGui.QMainWindow):
         
         self.set_status_before_train()
 
-        # 用于调试
+        # ------- 调试 -------
         self.training_files()
         self.validate_files()
 
@@ -353,7 +354,7 @@ class MainWindow(QtGui.QMainWindow):
         #                                            "Select training files",
         #                                            "..",
         #                                            "CSV Files (*.csv);;All Files (*)")
-        files = ['E:\\_Quant_NN\\training_files\\fu02_20081203.csv']
+        files = ['..\\training_files\\fu02_20081203.csv']
         # 每次选择文件时，都清空数组，重新生成
         self.model.train_x = []
         self.model.train_y = []
@@ -378,7 +379,7 @@ class MainWindow(QtGui.QMainWindow):
         #                                            "Select validate files",
         #                                            "..",
         #                                            "CSV Files (*.csv);;All Files (*)")
-        files = ['E:\\_Quant_NN\\training_files\\fu02_20081203.csv']
+        files = ['..\\training_files\\fu02_20081203.csv']
         # 每次选择文件时，都清空数组，重新生成
         self.model.validate_x = []
         self.model.validate_y = []
@@ -466,6 +467,7 @@ class MainWindow(QtGui.QMainWindow):
                 self.lossCanvas.index_list = self.lossCanvas.index_list[-canvas_show_max_length:]
                 self.lossCanvas.value_list = self.lossCanvas.value_list[-canvas_show_max_length:]
 
+            # print('-----------', self.lossCanvas.index_list[-1])
             self.lossCanvas.draw_enable_flag = True
 
         if 'temp_error_list' in callback_dict:
@@ -512,7 +514,7 @@ class MainWindow(QtGui.QMainWindow):
         self.weightMenu.clear()
         self.weightMenuItems = []
         for weight_index, weight in enumerate(weight_list):
-            weight_button = WeightMenuButton('&%s' % weight.name, self)
+            weight_button = MenuButton('&%s' % weight.name, self)
             weight_button.set_index(weight_index)
             weight_button.setStatusTip('Show "' + weight.name + '" in new window')
             # 此处用了两个信号，是为了解决自带信号 triggered() 不能带参数的问题
@@ -520,7 +522,7 @@ class MainWindow(QtGui.QMainWindow):
                          QtCore.SIGNAL('triggered()'),
                          weight_button.emit_f)
             self.connect(weight_button,
-                         QtCore.SIGNAL('clickWeightMenuButtonWithWeightIndex(int)'),
+                         QtCore.SIGNAL('clickMenuButtonWithIndex(int)'),
                          self.show_weight_chart)
             self.weightMenu.addAction(weight_button)
             # 引用是为了后面恢复使能
@@ -538,7 +540,7 @@ class MainWindow(QtGui.QMainWindow):
         self.gradMenu.clear()
         self.gradMenuItems = []
         for weight_index, weight in enumerate(weight_list):
-            grad_button = WeightMenuButton('&%s Grad' % weight.name, self)
+            grad_button = MenuButton('&%s Grad' % weight.name, self)
             grad_button.set_index(weight_index)
             grad_button.setStatusTip('Show grad of "' + weight.name + '" in new window')
             # 此处用了两个信号，是为了解决自带信号 triggered() 不能带参数的问题
@@ -546,7 +548,7 @@ class MainWindow(QtGui.QMainWindow):
                          QtCore.SIGNAL('triggered()'),
                          grad_button.emit_f)
             self.connect(grad_button,
-                         QtCore.SIGNAL('clickWeightMenuButtonWithWeightIndex(int)'),
+                         QtCore.SIGNAL('clickMenuButtonWithIndex(int)'),
                          self.show_grad_chart)
             self.gradMenu.addAction(grad_button)
             # 引用是为了后面恢复使能

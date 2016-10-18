@@ -164,8 +164,8 @@ class MyRNNModel(object):
                 self.grads_list = function_update_weights(self.learning_rate)
                 if train_index % 10 == 0:
                     print('*********** grads ***********')
-                    print(id(self.weights_list))
-                    print(id(self.layer.weights_list))
+                    # print(id(self.weights_list))
+                    # print(id(self.layer.weights_list))
                     print(id(self.grads_list))
                     # for grad in grads:
                     #     print(grad)
