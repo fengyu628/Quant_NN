@@ -26,6 +26,7 @@ from my_LSTM.my_data_processor import csv_file_to_train_data
 # _fromUtf8 = QtCore.QString.fromUtf8
 canvas_show_max_length = 1000
 
+
 class MenuButton(QtGui.QAction):
     """
     重写菜单栏的项目。
@@ -44,7 +45,6 @@ class MenuButton(QtGui.QAction):
     def emit_f(self):
         self.emit(QtCore.SIGNAL('clickMenuButtonWithIndex(int)'), self.index)
         self.setDisabled(True)
-
 
 
 class MainWindow(QtGui.QMainWindow):

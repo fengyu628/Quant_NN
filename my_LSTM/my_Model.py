@@ -162,13 +162,13 @@ class MyRNNModel(object):
 
                 # 更新权值
                 self.grads_list = function_update_weights(self.learning_rate)
-                if train_index % 10 == 0:
-                    print('*********** grads ***********')
-                    # print(id(self.weights_list))
-                    # print(id(self.layer.weights_list))
-                    print(id(self.grads_list))
-                    # for grad in grads:
-                    #     print(grad)
+                # if train_index % 10 == 0:
+                #     print('*********** grads ***********')
+                #     print(id(self.weights_list))
+                #     print(id(self.layer.weights_list))
+                #     print(id(self.grads_list))
+                #     for grad in grads:
+                #         print(grad)
                 # 发送loss的列表,此处如果不加‘float’，temp_loss_list会变成array(XXXX)
                 temp_loss_list.append(float(loss))
                 # 调用回调函数
