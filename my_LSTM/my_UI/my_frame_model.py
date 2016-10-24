@@ -45,7 +45,7 @@ class ModelFrame(QtGui.QFrame):
 
         grid.addWidget(self.buildButton, 0, 2, 2, 1)
         grid.addWidget(self.loadButton, 2, 2, 2, 1)
-        grid.addWidget(self.saveButton, 2, 3, 2, 1)
+        grid.addWidget(self.saveButton, 4, 2, 2, 1)
 
         self.setLayout(grid)
         self.setFrameShape(QtGui.QFrame.StyledPanel)

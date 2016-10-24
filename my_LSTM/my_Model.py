@@ -20,7 +20,8 @@ class MyRNNModel(object):
                  input_dim=8,
                  inner_units=20,
                  loss=loss_variance,
-                 optimizer=optimizer_sgd,
+                 optimizer=optimizer_sgd_batch,
+                 mini_batch_size=10,
                  learning_rate=0.05,
                  epoch=100
                  ):
@@ -32,6 +33,7 @@ class MyRNNModel(object):
         self.weights_list = []
         self.loss = loss
         self.optimizer = optimizer
+        self.mini_batch_size = mini_batch_size
         self.learning_rate = learning_rate
         self.epoch = epoch
 
@@ -126,7 +128,7 @@ class MyRNNModel(object):
         # 生成layer输出函数
         function_layer_output = self.make_function_layer_output()
         # 生成损失计算函数和权值更新函数
-        function_compute_loss, function_update_weights = self.optimizer(self.layer, self.loss, self.weights_list)
+        function_loss_and_update = self.optimizer(self.layer, self.loss, self.weights_list, self.mini_batch_size)
 
         temp_loss_list = []
         temp_error_list = []
@@ -134,7 +136,8 @@ class MyRNNModel(object):
         for epoch_index in range(self.epoch):
             print('========== epoch: %d ==========' % epoch_index)
             t = time.time()
-            for train_index in range(len(y_train_list)):
+            # 丢掉不足一个mini_batch的数据
+            for mini_batch_index in range(len(y_train_list)/int(self.mini_batch_size)):
                 # 根据标志位判断是否停止训练
                 if self.stop_train_flag is True:
                     print('Stop train!')
@@ -149,19 +152,23 @@ class MyRNNModel(object):
                         return
                     time.sleep(0.1)
 
-                x_train = x_train_list[train_index]
-                y_train = y_train_list[train_index]
+                x_train_mini_batch = x_train_list[mini_batch_index * self.mini_batch_size:
+                                       (mini_batch_index+1) * self.mini_batch_size]
+                y_train_mini_batch = y_train_list[mini_batch_index * self.mini_batch_size:
+                                       (mini_batch_index+1) * self.mini_batch_size]
 
                 # 计算目标函数
-                loss = function_compute_loss(x_train, y_train)
+                loss, self.grads_list = function_loss_and_update(x_train_mini_batch,
+                                                                 y_train_mini_batch,
+                                                                 self.learning_rate)
 
-                if train_index % 100 == 0:
-                    print('train_index: %d' % train_index)
+                if mini_batch_index % 10 == 0:
+                    print('mini batch index: %d' % mini_batch_index)
                     print('loss: %f' % loss)
                     # print('grads:\n', grads)
 
                 # 更新权值
-                self.grads_list = function_update_weights(self.learning_rate)
+                # self.grads_list = function_update_weights(self.learning_rate)
                 # if train_index % 10 == 0:
                 #     print('*********** grads ***********')
                 #     print(id(self.weights_list))
