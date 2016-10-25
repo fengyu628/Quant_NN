@@ -172,7 +172,7 @@ class MainWindow(QtGui.QMainWindow):
         self.set_parameters_related_to_mode()
 
         # TODO:----------- 调试 -----------
-        # self.build_model()
+        self.build_model()
 
     # *********************************************** 消息处理函数 ******************************************************
 
@@ -195,8 +195,8 @@ class MainWindow(QtGui.QMainWindow):
         self.set_status_before_train()
 
         # TODO:----------- 调试 -----------
-        # self.training_files()
-        # self.validate_files()
+        self.training_files()
+        self.validate_files()
 
     # 开始训练模型
     @QtCore.pyqtSlot()
@@ -204,7 +204,7 @@ class MainWindow(QtGui.QMainWindow):
         try:
             # 设置训练参数
             self.model.loss = getattr(my_loss, str(self.lossComboBox.currentText()))
-            self.model.optimizer = getattr(my_optimizer, str(self.optimizerComboBox.currentText()))
+            self.model.optimizer_type = getattr(my_optimizer, str(self.optimizerComboBox.currentText()))
             self.model.learning_rate = float(self.learningRateEdit.text())
             self.model.mini_batch_size = float(self.batchSizeEdit.text())
             self.model.epoch = int(self.epochEdit.text())
@@ -577,7 +577,7 @@ class MainWindow(QtGui.QMainWindow):
         self.lossComboBox.setCurrentIndex(0)
 
         for item in dir(my_optimizer):
-            if str(item).startswith('optimizer_'):
+            if str(item).startswith('Optimizer_'):
                 # 遍历的顺序为倒序，所以每次都插入到第一个
                 self.optimizerComboBox.insertItem(0, item)
         self.optimizerComboBox.setCurrentIndex(0)
@@ -597,7 +597,7 @@ class MainWindow(QtGui.QMainWindow):
             if self.model.loss.__name__ == self.lossComboBox.itemText(index):
                 self.lossComboBox.setCurrentIndex(index)
         for index in range(self.optimizerComboBox.count()):
-            if self.model.optimizer.__name__ == self.optimizerComboBox.itemText(index):
+            if self.model.optimizer_type.__name__ == self.optimizerComboBox.itemText(index):
                 self.optimizerComboBox.setCurrentIndex(index)
         self.trainThread.set_model(self.model)
 

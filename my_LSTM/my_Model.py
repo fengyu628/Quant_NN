@@ -21,7 +21,7 @@ class MyRNNModel(object):
                  input_dim=8,
                  inner_units=20,
                  loss=loss_variance,
-                 optimizer=optimizer_sgd_batch,
+                 optimizer_type=Optimizer_SGD,
                  mini_batch_size=20,
                  learning_rate=0.1,
                  epoch=100
@@ -33,7 +33,8 @@ class MyRNNModel(object):
         self.layer = None
         self.weights_list = []
         self.loss = loss
-        self.optimizer = optimizer
+        self.optimizer_type = optimizer_type
+        self.optimizer = None
         self.mini_batch_size = mini_batch_size
         self.learning_rate = learning_rate
         self.epoch = epoch
@@ -73,29 +74,41 @@ class MyRNNModel(object):
         # 初始化 grads_list，此处只是取 weights_list 的型式
         self.grads_list = copy.deepcopy(self.weights_list)
 
+        self.optimizer = self.optimizer_type(lr=self.learning_rate)
+
     # 制作layer输出函数
     # @staticmethod
-    def make_function_layer_output(self):
-        print('make output function')
-        x_symbol = tensor.matrix(name='scan_input')
-        y_symbol = self.layer(x_symbol)
-        return theano.function([x_symbol], y_symbol, name='f_out')
+    # def make_function_layer_output(self):
+    #     print('make output function')
+    #     x_symbol = tensor.matrix(name='scan_input')
+    #     y_symbol = self.layer(x_symbol)
+    #     return theano.function([x_symbol], y_symbol, name='f_out')
 
-    # 计算验证误差
-    # @staticmethod
-    def error_valid(self, x_list, y_list, layer_compute_function):
-        if len(x_list) != len(y_list):
-            print('len(x) != len(y)')
-            return
-        error = 0.
-        for i in range(len(y_list)):
-            x = x_list[i]
-            y = y_list[i]
-            out = layer_compute_function(x)
-            loss_valid = self.loss(out, y)
-            error += loss_valid
-        error /= float(len(y_list))
-        return error
+    # 制作损失和更新函数，最重要的步骤
+    def make_function_loss_update(self):
+        x_symbol_list = tensor.tensor3(dtype=theano.config.floatX)
+        # 目标值
+        y_target_symbol_list = tensor.vector(dtype=theano.config.floatX)
+
+        # 计算所有输出
+        y_out_list, scan_update = theano.scan(lambda x: self.layer(x),
+                                              sequences=x_symbol_list)
+        # 计算损失函数（以数组的型式，一次性计算）
+        loss_total = self.loss(y_out_list, y_target_symbol_list)
+        # 制作损失函数
+        print('make loss function')
+        f_loss = theano.function([x_symbol_list, y_target_symbol_list],
+                                 outputs=loss_total,
+                                 name='f_loss')
+        # 通过优化器得到更新数据
+        updates = self.optimizer.make_updates(self.weights_list, self.grads_list, loss_total)
+        # 制作带更新权值的损失函数
+        print('make loss and update function')
+        f_loss_update = theano.function([x_symbol_list, y_target_symbol_list],
+                                        outputs=loss_total,
+                                        updates=updates,
+                                        name='f_loss_update')
+        return f_loss, f_loss_update
 
     # 设置回调函数，在权值更新的调用
     def set_callback_when_weight_updated(self, callback):
@@ -129,9 +142,9 @@ class MyRNNModel(object):
             return
 
         # 生成layer输出函数
-        function_layer_output = self.make_function_layer_output()
+        # function_layer_output = self.make_function_layer_output()
         # 生成损失计算函数和权值更新函数
-        function_loss_and_update = self.optimizer(self.layer, self.loss, self.weights_list, self.grads_list)
+        function_loss, function_loss_and_update = self.make_function_loss_update()
 
         temp_loss_list = []
         temp_error_list = []
@@ -161,7 +174,7 @@ class MyRNNModel(object):
                                                              (mini_batch_index+1) * self.mini_batch_size])
                 assert len(x_train_mini_batch) == len(y_train_mini_batch)
                 # 计算目标函数，并更新权值
-                loss = function_loss_and_update(x_train_mini_batch, y_train_mini_batch, self.learning_rate)
+                loss = function_loss_and_update(x_train_mini_batch, y_train_mini_batch)
 
                 if mini_batch_index % 10 == 0:
                     print('mini batch index: %d' % mini_batch_index)
@@ -189,7 +202,7 @@ class MyRNNModel(object):
 
             # 计算验证误差
             print('computing error ...')
-            err = self.error_valid(x_valid_list, y_valid_list, function_layer_output)
+            err = function_loss(x_valid_list, y_valid_list)
             print('valid error: %f' % err)
             print('time use: %f' % (time.time() - t))
             temp_error_list.append(float(err))
@@ -242,7 +255,7 @@ if __name__ == '__main__':
                        input_dim=2,
                        inner_units=20,
                        loss=loss_variance,
-                       optimizer=optimizer_sgd_batch,
+                       optimizer_type=Optimizer_SGD,
                        learning_rate=0.05,
                        epoch=100)
 

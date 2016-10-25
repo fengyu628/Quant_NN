@@ -10,7 +10,7 @@ import copy
 train_x_length = 10
 # 用来判断间隔的交易时间
 # 一段训练数据，从头到尾，共漏掉的秒数
-inter_time = 2
+inter_time = 0.5
 # 一段训练数据，从头到尾，可容忍的最长秒数
 max_time = (train_x_length / 2) + inter_time
 # 用来计算目标值的数据长度

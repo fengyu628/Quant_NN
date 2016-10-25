@@ -23,7 +23,7 @@ class TrainFrame(QtGui.QFrame):
         self.lossFunctionLabel = MyLabel('Loss:')
         self.lossComboBox = MyComboBox()
 
-        self.optimizerLabel = MyLabel('Optimizer:')
+        self.optimizerLabel = MyLabel('Optimizer Type:')
         self.optimizerComboBox = MyComboBox()
 
         self.learningRateLabel = MyLabel('learning Rate:')
