@@ -5,6 +5,7 @@
 # import theano.tensor as tensor
 # from theano import config
 import time
+import copy
 
 from my_layer import *
 from my_optimizer import *
@@ -21,8 +22,8 @@ class MyRNNModel(object):
                  inner_units=20,
                  loss=loss_variance,
                  optimizer=optimizer_sgd_batch,
-                 mini_batch_size=10,
-                 learning_rate=0.05,
+                 mini_batch_size=20,
+                 learning_rate=0.1,
                  epoch=100
                  ):
         super(MyRNNModel, self).__init__()
@@ -69,6 +70,8 @@ class MyRNNModel(object):
         # 实例化模型
         self.layer = self.layer_type(self.input_dim, self.inner_units)
         self.weights_list = self.layer.get_weight_list()
+        # 初始化 grads_list，此处只是取 weights_list 的型式
+        self.grads_list = copy.deepcopy(self.weights_list)
 
     # 制作layer输出函数
     # @staticmethod
@@ -128,7 +131,7 @@ class MyRNNModel(object):
         # 生成layer输出函数
         function_layer_output = self.make_function_layer_output()
         # 生成损失计算函数和权值更新函数
-        function_loss_and_update = self.optimizer(self.layer, self.loss, self.weights_list, self.mini_batch_size)
+        function_loss_and_update = self.optimizer(self.layer, self.loss, self.weights_list, self.grads_list)
 
         temp_loss_list = []
         temp_error_list = []
@@ -151,21 +154,18 @@ class MyRNNModel(object):
                         print('Stop train!')
                         return
                     time.sleep(0.1)
-
-                x_train_mini_batch = x_train_list[mini_batch_index * self.mini_batch_size:
-                                       (mini_batch_index+1) * self.mini_batch_size]
-                y_train_mini_batch = y_train_list[mini_batch_index * self.mini_batch_size:
-                                       (mini_batch_index+1) * self.mini_batch_size]
-
-                # 计算目标函数
-                loss, self.grads_list = function_loss_and_update(x_train_mini_batch,
-                                                                 y_train_mini_batch,
-                                                                 self.learning_rate)
+                # 创建训练数据的 miniBatch
+                x_train_mini_batch = np.asarray(x_train_list[mini_batch_index * self.mini_batch_size:
+                                                             (mini_batch_index+1) * self.mini_batch_size])
+                y_train_mini_batch = np.asarray(y_train_list[mini_batch_index * self.mini_batch_size:
+                                                             (mini_batch_index+1) * self.mini_batch_size])
+                assert len(x_train_mini_batch) == len(y_train_mini_batch)
+                # 计算目标函数，并更新权值
+                loss = function_loss_and_update(x_train_mini_batch, y_train_mini_batch, self.learning_rate)
 
                 if mini_batch_index % 10 == 0:
                     print('mini batch index: %d' % mini_batch_index)
                     print('loss: %f' % loss)
-                    # print('grads:\n', grads)
 
                 # 更新权值
                 # self.grads_list = function_update_weights(self.learning_rate)
@@ -242,7 +242,7 @@ if __name__ == '__main__':
                        input_dim=2,
                        inner_units=20,
                        loss=loss_variance,
-                       optimizer=optimizer_sgd,
+                       optimizer=optimizer_sgd_batch,
                        learning_rate=0.05,
                        epoch=100)
 

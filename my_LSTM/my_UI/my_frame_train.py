@@ -29,6 +29,9 @@ class TrainFrame(QtGui.QFrame):
         self.learningRateLabel = MyLabel('learning Rate:')
         self.learningRateEdit = MyEdit(self)
 
+        self.batchSizeLabel = MyLabel('MiniBatch Size:')
+        self.batchSizeEdit = MyEdit(self)
+
         self.epochLabel = MyLabel('Epoch:')
         self.epochEdit = MyEdit(self)
 
@@ -54,10 +57,12 @@ class TrainFrame(QtGui.QFrame):
         grid.addWidget(self.lossComboBox, 2, 1, 1, 1)
         grid.addWidget(self.optimizerLabel, 3, 0, 1, 1, QtCore.Qt.AlignRight)
         grid.addWidget(self.optimizerComboBox, 3, 1, 1, 1)
-        grid.addWidget(self.learningRateLabel, 4, 0, 1, 1, QtCore.Qt.AlignRight)
-        grid.addWidget(self.learningRateEdit, 4, 1, 1, 1)
-        grid.addWidget(self.epochLabel, 5, 0, 1, 1, QtCore.Qt.AlignRight)
-        grid.addWidget(self.epochEdit, 5, 1, 1, 1)
+        grid.addWidget(self.batchSizeLabel, 4, 0, 1, 1, QtCore.Qt.AlignRight)
+        grid.addWidget(self.batchSizeEdit, 4, 1, 1, 1)
+        grid.addWidget(self.learningRateLabel, 5, 0, 1, 1, QtCore.Qt.AlignRight)
+        grid.addWidget(self.learningRateEdit, 5, 1, 1, 1)
+        grid.addWidget(self.epochLabel, 6, 0, 1, 1, QtCore.Qt.AlignRight)
+        grid.addWidget(self.epochEdit, 6, 1, 1, 1)
 
         grid.addWidget(self.trainButton, 2, 2, 2, 1)
         grid.addWidget(self.pauseTrainButton, 2, 3, 2, 1)
@@ -75,6 +80,7 @@ class TrainFrame(QtGui.QFrame):
         # 训练开始后，训练参数不再允许更改
         self.lossComboBox.setDisabled(True)
         self.optimizerComboBox.setDisabled(True)
+        self.batchSizeEdit.setDisabled(True)
         self.learningRateEdit.setDisabled(True)
         self.epochEdit.setDisabled(True)
         # 把按钮禁用掉

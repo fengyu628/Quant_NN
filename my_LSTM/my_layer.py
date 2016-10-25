@@ -9,7 +9,8 @@ from theano import config
 # 生成随机权值矩阵
 def make_random_matrix_with_shape(dim1, dim2, name=None):
     randn = np.random.rand(dim1, dim2)
-    m = (0.01 * randn).astype(config.floatX)
+    # m = (0.01 * randn).astype(config.floatX)
+    m = (0.02 * randn).astype(config.floatX)
     m = theano.shared(m, name=name)
     return m
 
@@ -17,7 +18,8 @@ def make_random_matrix_with_shape(dim1, dim2, name=None):
 # 生成随机权值向量
 def make_random_vector_with_shape(dim1, name=None):
     randn = np.random.random(dim1)
-    v = (0.01 * randn).astype(config.floatX)
+    # v = (0.01 * randn).astype(config.floatX)
+    v = (0.02 * randn).astype(config.floatX)
     v = theano.shared(v, name=name)
     return v
 
@@ -25,7 +27,8 @@ def make_random_vector_with_shape(dim1, name=None):
 # 生成随机标量
 def make_scalar(name=None):
     rand = np.random.random()
-    s = (0.01 * rand)
+    # s = (0.01 * rand)
+    s = (0.02 * rand)
     s = theano.shared(s, name=name)
     return s
 

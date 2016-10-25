@@ -24,7 +24,7 @@ from my_LSTM import my_optimizer
 from my_LSTM.my_data_processor import csv_file_to_train_data
 
 # _fromUtf8 = QtCore.QString.fromUtf8
-canvas_show_max_length = 1000
+canvas_show_max_length = 500
 
 
 class MenuButton(QtGui.QAction):
@@ -56,7 +56,7 @@ class MainWindow(QtGui.QMainWindow):
 
         # ============================================= 窗口布局 =====================================================
         # self.setFixedSize(500, 300)
-        self.resize(800, 600)
+        self.resize(800, 650)
         self.setWindowTitle('Model')
 
         # 初始化菜单栏
@@ -97,6 +97,7 @@ class MainWindow(QtGui.QMainWindow):
         self.validateFilesEdit = self.TrainFrame.validateFilesEdit
         self.lossComboBox = self.TrainFrame.lossComboBox
         self.optimizerComboBox = self.TrainFrame.optimizerComboBox
+        self.batchSizeEdit = self.TrainFrame.batchSizeEdit
         self.learningRateEdit = self.TrainFrame.learningRateEdit
         self.epochEdit = self.TrainFrame.epochEdit
         self.trainButton = self.TrainFrame.trainButton
@@ -170,8 +171,8 @@ class MainWindow(QtGui.QMainWindow):
         # 设置模型相关参数
         self.set_parameters_related_to_mode()
 
-        # ------- 调试 -------
-        self.build_model()
+        # TODO:----------- 调试 -----------
+        # self.build_model()
 
     # *********************************************** 消息处理函数 ******************************************************
 
@@ -193,9 +194,9 @@ class MainWindow(QtGui.QMainWindow):
         
         self.set_status_before_train()
 
-        # ------- 调试 -------
-        self.training_files()
-        self.validate_files()
+        # TODO:----------- 调试 -----------
+        # self.training_files()
+        # self.validate_files()
 
     # 开始训练模型
     @QtCore.pyqtSlot()
@@ -205,6 +206,7 @@ class MainWindow(QtGui.QMainWindow):
             self.model.loss = getattr(my_loss, str(self.lossComboBox.currentText()))
             self.model.optimizer = getattr(my_optimizer, str(self.optimizerComboBox.currentText()))
             self.model.learning_rate = float(self.learningRateEdit.text())
+            self.model.mini_batch_size = float(self.batchSizeEdit.text())
             self.model.epoch = int(self.epochEdit.text())
         except Exception as e:
             print(e)
@@ -250,8 +252,8 @@ class MainWindow(QtGui.QMainWindow):
     @QtCore.pyqtSlot()
     def show_weight_chart(self, weight_index):
         weight_chart = Chart((self.model.weights_list[weight_index]).name,
-                      (self.model.weights_list[weight_index]).get_value(),
-                      weight_index)
+                             (self.model.weights_list[weight_index]).get_value(),
+                             weight_index)
         self.connect(weight_chart, QtCore.SIGNAL('closeChartWithIndex(int)'), self.close_weight_chart_event)
         self.weight_charts.append(weight_chart)
         weight_chart.show_content((self.model.weights_list[weight_index]).get_value())
@@ -262,11 +264,11 @@ class MainWindow(QtGui.QMainWindow):
     def show_grad_chart(self, grad_index):
         chart_name = (self.model.weights_list[grad_index]).name + ' Grad'
         grad_chart = Chart(chart_name,
-                           self.model.grads_list[grad_index],
+                           (self.model.grads_list[grad_index]).get_value(),
                            grad_index)
         self.connect(grad_chart, QtCore.SIGNAL('closeChartWithIndex(int)'), self.close_grad_chart_event)
         self.grad_charts.append(grad_chart)
-        grad_chart.show_content(self.model.grads_list[grad_index])
+        grad_chart.show_content((self.model.grads_list[grad_index]).get_value())
         grad_chart.show()
 
     # 有 Weight Chart 被关闭的事件处理
@@ -358,9 +360,9 @@ class MainWindow(QtGui.QMainWindow):
         # 每次选择文件时，都清空数组，重新生成
         self.model.train_x = []
         self.model.train_y = []
-        for index, file in enumerate(files):
+        for index, f in enumerate(files):
             # 从文件生成训练数据
-            x_array, y_array = csv_file_to_train_data(file)
+            x_array, y_array = csv_file_to_train_data(f)
             print(x_array.shape, y_array.shape)
             if len(self.model.train_x) == 0:
                 self.model.train_x = x_array
@@ -383,9 +385,9 @@ class MainWindow(QtGui.QMainWindow):
         # 每次选择文件时，都清空数组，重新生成
         self.model.validate_x = []
         self.model.validate_y = []
-        for index, file in enumerate(files):
+        for index, f in enumerate(files):
             # 从文件生成训练数据
-            x_array, y_array = csv_file_to_train_data(file)
+            x_array, y_array = csv_file_to_train_data(f)
             print(x_array.shape, y_array.shape)
             if len(self.model.validate_x) == 0:
                 self.model.validate_x = x_array
@@ -404,9 +406,10 @@ class MainWindow(QtGui.QMainWindow):
     def format_time_with_title(title, time_seconds):
         return title + u'： %d天 %d小时 %d分 %d秒 .%d' % \
                (time_seconds / (24 * 60 * 60),
-                time_seconds / (60 * 60),
-                time_seconds / 60,
-                time_seconds % 60, ((time_seconds % 1) * 10) % 10)
+                (time_seconds / (60 * 60)) % 24,
+                (time_seconds / 60) % 60,
+                time_seconds % 60,
+                ((time_seconds % 1) * 10) % 10)
 
     # 画 canvas 的线程函数
     def draw_canvas(self):
@@ -444,7 +447,7 @@ class MainWindow(QtGui.QMainWindow):
         for chart in self.weight_charts:
             chart.show_content((self.model.weights_list[chart.index]).get_value())
         for chart in self.grad_charts:
-            chart.show_content(self.model.grads_list[chart.index])
+            chart.show_content((self.model.grads_list[chart.index]).get_value())
 
         if 'temp_loss_list' in callback_dict:
             temp_loss_list = callback_dict['temp_loss_list']
@@ -583,6 +586,7 @@ class MainWindow(QtGui.QMainWindow):
     def set_parameters_related_to_mode(self):
         self.inputDimEdit.setText(str(self.model.input_dim))
         self.innerUnitsEdit.setText(str(self.model.inner_units))
+        self.batchSizeEdit.setText(str(self.model.mini_batch_size))
         self.learningRateEdit.setText(str(self.model.learning_rate))
         self.epochEdit.setText(str(self.model.epoch))
         # self.set_combo_box()
