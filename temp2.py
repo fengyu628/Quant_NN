@@ -15,10 +15,23 @@ b = [2,4,6,8,10,12,14,16]
 # f = theano.function([x1_s, x2_s], result)
 # c = f(a, b)
 # print(c)
+# print(T.sqr(4).eval())
+# print(T.sqrt(4).eval())
 
+# def loss_variance(y_out, y_target):
+#     return T.mean(T.sqr(y_out - y_target))
+#
+# c = loss_variance(np.asarray(a), np.asarray(b))
+# print(c.eval())
 
-def loss_variance(y_out, y_target):
-    return T.mean(T.sqr(y_out - y_target))
+class A(object):
+    def __init__(self, a=1, b=2):
+        super(A, self).__init__()
+        self.__dict__.update(locals())
 
-c = loss_variance(np.asarray(a), np.asarray(b))
-print(c.eval())
+    def hah(self):
+        pass
+
+aa = A()
+print(hasattr(aa, 'hah'))
+# print(dir(aa))

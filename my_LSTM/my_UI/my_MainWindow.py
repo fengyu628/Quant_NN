@@ -55,8 +55,8 @@ class MainWindow(QtGui.QMainWindow):
         super(MainWindow, self).__init__(parent)
 
         # ============================================= 窗口布局 =====================================================
-        # self.setFixedSize(500, 300)
-        self.resize(800, 650)
+        self.setFixedSize(800, 650)
+        # self.resize(800, 650)
         self.setWindowTitle('Model')
 
         # 初始化菜单栏
@@ -98,7 +98,6 @@ class MainWindow(QtGui.QMainWindow):
         self.lossComboBox = self.TrainFrame.lossComboBox
         self.optimizerComboBox = self.TrainFrame.optimizerComboBox
         self.batchSizeEdit = self.TrainFrame.batchSizeEdit
-        self.learningRateEdit = self.TrainFrame.learningRateEdit
         self.epochEdit = self.TrainFrame.epochEdit
         self.trainButton = self.TrainFrame.trainButton
         self.pauseTrainButton = self.TrainFrame.pauseTrainButton
@@ -205,7 +204,6 @@ class MainWindow(QtGui.QMainWindow):
             # 设置训练参数
             self.model.loss = getattr(my_loss, str(self.lossComboBox.currentText()))
             self.model.optimizer_type = getattr(my_optimizer, str(self.optimizerComboBox.currentText()))
-            self.model.learning_rate = float(self.learningRateEdit.text())
             self.model.mini_batch_size = float(self.batchSizeEdit.text())
             self.model.epoch = int(self.epochEdit.text())
         except Exception as e:
@@ -587,7 +585,6 @@ class MainWindow(QtGui.QMainWindow):
         self.inputDimEdit.setText(str(self.model.input_dim))
         self.innerUnitsEdit.setText(str(self.model.inner_units))
         self.batchSizeEdit.setText(str(self.model.mini_batch_size))
-        self.learningRateEdit.setText(str(self.model.learning_rate))
         self.epochEdit.setText(str(self.model.epoch))
         # self.set_combo_box()
         for index in range(self.layerComboBox.count()):
