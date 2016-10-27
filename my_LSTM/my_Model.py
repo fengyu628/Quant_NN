@@ -1,15 +1,12 @@
 # coding:utf-8
 
-# import numpy as np
-# import theano
-# import theano.tensor as tensor
-# from theano import config
 import time
 import copy
 
 from my_layer import *
 from my_optimizer import *
 from my_loss import *
+from my_regularizers import *
 
 
 class MyRNNModel(object):
@@ -50,6 +47,8 @@ class MyRNNModel(object):
         self.validate_y = []
 
         self.grads_list = []
+
+        self.regularizer = WeightRegularizer()
 
     # 在保存模型之前需要做的操作
     def set_status_before_save(self):
@@ -100,14 +99,17 @@ class MyRNNModel(object):
         y_out_list, scan_update = theano.scan(lambda x: self.layer(x),
                                               sequences=x_symbol_list)
         # 计算损失函数（以数组的型式，一次性计算）
-        loss_total = self.loss(y_out_list, y_target_symbol_list)
+        loss_no_regularizer = self.loss(y_out_list, y_target_symbol_list)
+        # 添加正则项
+        self.regularizer.set_param(self.weights_list)
+        loss_total = self.regularizer(loss_no_regularizer)
         # 制作损失函数
         print('make loss function')
         f_loss = theano.function([x_symbol_list, y_target_symbol_list],
                                  outputs=loss_total,
                                  name='f_loss')
         # 通过优化器得到更新数据
-        updates = self.optimizer.make_updates(self.weights_list, self.grads_list, loss_total)
+        updates = self.optimizer.get_updates(self.weights_list, self.grads_list, loss_total, [])
         # 制作带更新权值的损失函数
         print('make loss and update function')
         f_loss_update = theano.function([x_symbol_list, y_target_symbol_list],
@@ -122,6 +124,18 @@ class MyRNNModel(object):
     def train(self):
 
         self.optimizer = self.optimizer_type()
+
+        print('*' * 50)
+        print('Layer: %s' % self.layer.__class__)
+        print('Input Dim: %d' % self.input_dim)
+        print('Inner Units: %d' % self.inner_units)
+        print('Loss: %s' % self.loss.__name__)
+        print('Regularizer: %s' % self.regularizer.__class__)
+        print('Optimizer: %s' % self.optimizer.__class__)
+        print('Leaning Rate: %s' % self.optimizer.lr.get_value())
+        print('Mini Batch Size: %d' % self.mini_batch_size)
+        print('Epoch: %d' % self.epoch)
+        print('*' * 50)
 
         x_train_list = self.train_x
         y_train_list = self.train_y
@@ -148,7 +162,7 @@ class MyRNNModel(object):
             print('lr: %f' % self.optimizer.lr.eval())
             t = time.time()
             # 丢掉不足一个mini_batch的数据
-            for mini_batch_index in range(len(y_train_list)/int(self.mini_batch_size)):
+            for mini_batch_index in range(int(len(y_train_list)/int(self.mini_batch_size))):
                 # 根据标志位判断是否停止训练
                 if self.stop_train_flag is True:
                     print('Stop train!')
@@ -163,10 +177,10 @@ class MyRNNModel(object):
                         return
                     time.sleep(0.1)
                 # 创建训练数据的 miniBatch
-                x_train_mini_batch = np.asarray(x_train_list[mini_batch_index * self.mini_batch_size:
-                                                             (mini_batch_index+1) * self.mini_batch_size])
-                y_train_mini_batch = np.asarray(y_train_list[mini_batch_index * self.mini_batch_size:
-                                                             (mini_batch_index+1) * self.mini_batch_size])
+                x_train_mini_batch = np.asarray(x_train_list[int(mini_batch_index * self.mini_batch_size):
+                                                             int((mini_batch_index+1) * self.mini_batch_size)])
+                y_train_mini_batch = np.asarray(y_train_list[int(mini_batch_index * self.mini_batch_size):
+                                                             int((mini_batch_index+1) * self.mini_batch_size)])
                 assert len(x_train_mini_batch) == len(y_train_mini_batch)
                 # 计算目标函数，并更新权值
                 loss = function_loss_and_update(x_train_mini_batch, y_train_mini_batch)

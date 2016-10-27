@@ -482,10 +482,10 @@ class MainWindow(QtGui.QMainWindow):
             else:
                 for i in range(len(temp_error_list)):
                     self.errorCanvas.index_list.append(self.errorCanvas.index_list[-1] + 1 + i)
-            # print(len(self.errorCanvas.index_list))
+            print('error list index length: %d' % len(self.errorCanvas.index_list))
             for error in temp_error_list:
                 self.errorCanvas.value_list.append(error)
-            # print(len(self.errorCanvas.value_list))
+            print('error list value length: %d' % len(self.errorCanvas.value_list))
 
             # 仅仅保留最后的 canvas_show_max_length 个数据，用于显示
             if len(self.errorCanvas.index_list) > canvas_show_max_length:
@@ -564,20 +564,17 @@ class MainWindow(QtGui.QMainWindow):
     def init_combo_box(self):
         for item in dir(my_layer):
             if str(item).startswith('Layer_'):
-                # 遍历的顺序为倒序，所以每次都插入到第一个
-                self.layerComboBox.insertItem(0, item)
+                self.layerComboBox.addItem(item)
         self.layerComboBox.setCurrentIndex(0)
 
         for item in dir(my_loss):
             if str(item).startswith('loss_'):
-                # 遍历的顺序为倒序，所以每次都插入到第一个
-                self.lossComboBox.insertItem(0, item)
+                self.lossComboBox.addItem(item)
         self.lossComboBox.setCurrentIndex(0)
 
         for item in dir(my_optimizer):
             if str(item).startswith('Optimizer_'):
-                # 遍历的顺序为倒序，所以每次都插入到第一个
-                self.optimizerComboBox.insertItem(0, item)
+                self.optimizerComboBox.addItem(item)
         self.optimizerComboBox.setCurrentIndex(0)
 
     # 用于在改变模型后，设置与模型相关的参数
