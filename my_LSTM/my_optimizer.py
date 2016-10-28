@@ -1,11 +1,7 @@
 # coding:utf-8
 
-# import theano
-# import theano.tensor as T
-import numpy as np
 import my_theano_backend as K
-# from .utils.generic_utils import get_from_module
-# from six.moves import zip
+# import theano.tensor as T
 
 
 def clip_norm(g, c, n):
@@ -95,8 +91,8 @@ class Optimizer(object):
         return cls(**config)
 
 
-# =============================================================================================================
-# =============================================================================================================
+# =====================================================================================================================
+# =====================================================================================================================
 
 class Optimizer_SGD(Optimizer):
     """Stochastic gradient descent, with support for momentum,

@@ -5,7 +5,8 @@ import theano
 from theano import tensor as T
 
 _FLOATX = theano.config.floatX
-_LEARNING_PHASE = 0
+_LEARNING_PHASE = 1
+
 
 def variable(value, dtype=_FLOATX, name=None):
     value = np.asarray(value, dtype=dtype)
@@ -88,8 +89,6 @@ def abs(x):
 
 
 def cast_to_floatx(x):
-    '''Cast a Numpy array to floatx.
-    '''
     return np.asarray(x, dtype=_FLOATX)
 
 def in_train_phase(x, alt):

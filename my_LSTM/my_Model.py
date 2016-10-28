@@ -5,6 +5,7 @@ import copy
 
 from my_layer import *
 from my_optimizer import *
+from my_optimizer_my import *
 from my_loss import *
 from my_regularizers import *
 
@@ -17,8 +18,8 @@ class MyRNNModel(object):
                  layer_type=Layer_LSTM,
                  input_dim=8,
                  inner_units=20,
-                 loss=loss_variance,
-                 optimizer_type=Optimizer_SGD,
+                 loss=loss_mean_squared_error,
+                 optimizer_type=Optimizer_Adadelta_my,
                  mini_batch_size=20,
                  epoch=100
                  ):
@@ -99,10 +100,10 @@ class MyRNNModel(object):
         y_out_list, scan_update = theano.scan(lambda x: self.layer(x),
                                               sequences=x_symbol_list)
         # 计算损失函数（以数组的型式，一次性计算）
-        loss_no_regularizer = self.loss(y_out_list, y_target_symbol_list)
+        loss_total = self.loss(y_out_list, y_target_symbol_list)
         # 添加正则项
-        self.regularizer.set_param(self.weights_list)
-        loss_total = self.regularizer(loss_no_regularizer)
+        for regularizer in self.layer.regularizers:
+            loss_total = regularizer(loss_total)
         # 制作损失函数
         print('make loss function')
         f_loss = theano.function([x_symbol_list, y_target_symbol_list],
@@ -126,12 +127,12 @@ class MyRNNModel(object):
         self.optimizer = self.optimizer_type()
 
         print('*' * 50)
-        print('Layer: %s' % self.layer.__class__)
+        print('Layer: %s' % self.layer.__class__.__name__)
         print('Input Dim: %d' % self.input_dim)
         print('Inner Units: %d' % self.inner_units)
         print('Loss: %s' % self.loss.__name__)
-        print('Regularizer: %s' % self.regularizer.__class__)
-        print('Optimizer: %s' % self.optimizer.__class__)
+        print('Regularizer: %s' % self.regularizer.__class__.__name__)
+        print('Optimizer: %s' % self.optimizer.__class__.__name__)
         print('Leaning Rate: %s' % self.optimizer.lr.get_value())
         print('Mini Batch Size: %d' % self.mini_batch_size)
         print('Epoch: %d' % self.epoch)

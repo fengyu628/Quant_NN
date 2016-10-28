@@ -60,3 +60,23 @@ class MplCanvas(FigureCanvas):
         self.ax.plot(x, y, label="$sin(x)$", color="red", linewidth=1)
         self.draw()
 
+    def mousePressEvent(self, event):
+        pass
+
+    def mouseDoubleClickEvent(self, event):
+        pass
+
+    def mouseMoveEvent(self, event):
+        pass
+
+    def mouseReleaseEvent(self, event):
+        pass
+
+    def wheelEvent(self, event):
+        pass
+
+    def keyPressEvent(self, event):
+        pass
+
+    def keyReleaseEvent(self, event):
+        pass

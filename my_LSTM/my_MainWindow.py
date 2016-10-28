@@ -1,27 +1,23 @@
 # coding:utf-8
 
-# import matplotlib.pyplot as plt
-# from matplotlib.ticker import  MultipleLocator
 from PyQt4 import QtGui
 from PyQt4 import QtCore
 import numpy as np
-# import sys
 import time
-# import cv2.cv as cv
 import copy
 import pickle
 
-from my_thread import TrainThread, MyGeneralThread
-from my_chart import Chart
-# from my_mplCanvas import MplCanvas
-from my_frame_model import ModelFrame
-from my_frame_train import TrainFrame
-from my_frame_canvas import CanvasFrame
+from my_UI.my_thread import TrainThread, MyGeneralThread
+from my_UI.my_chart import Chart
+from my_UI.my_frame_model import ModelFrame
+from my_UI.my_frame_train import TrainFrame
+from my_UI.my_frame_canvas import CanvasFrame
 
-from my_LSTM import my_layer
-from my_LSTM import my_loss
-from my_LSTM import my_optimizer
-from my_LSTM.my_data_processor import csv_file_to_train_data
+import my_layer
+import my_loss
+import my_optimizer
+import my_optimizer_my
+from my_data_processor import csv_file_to_train_data
 
 # _fromUtf8 = QtCore.QString.fromUtf8
 canvas_show_max_length = 500
@@ -180,7 +176,8 @@ class MainWindow(QtGui.QMainWindow):
     def build_model(self):
         try:
             # 设置模型参数
-            self.model.layer_type = getattr(my_layer, str(self.layerComboBox.currentText()))
+
+            self.model.layer_type = getattr(my_layer, 'Layer_' + str(self.layerComboBox.currentText()))
             self.model.input_dim = int(self.inputDimEdit.text())
             self.model.inner_units = int(self.innerUnitsEdit.text())
             self.model.build_layer()
@@ -202,8 +199,16 @@ class MainWindow(QtGui.QMainWindow):
     def train_model(self):
         try:
             # 设置训练参数
-            self.model.loss = getattr(my_loss, str(self.lossComboBox.currentText()))
-            self.model.optimizer_type = getattr(my_optimizer, str(self.optimizerComboBox.currentText()))
+            self.model.loss = getattr(my_loss, 'loss_' + str(self.lossComboBox.currentText()))
+
+            optimizer_selected = 'Optimizer_' + str(self.optimizerComboBox.currentText())
+            if optimizer_selected in dir(my_optimizer):
+                self.model.optimizer_type = getattr(my_optimizer, optimizer_selected)
+            elif optimizer_selected in dir(my_optimizer_my):
+                self.model.optimizer_type = getattr(my_optimizer_my, optimizer_selected)
+            else:
+                print('Can not find optimizer!')
+
             self.model.mini_batch_size = float(self.batchSizeEdit.text())
             self.model.epoch = int(self.epochEdit.text())
         except Exception as e:
@@ -536,7 +541,7 @@ class MainWindow(QtGui.QMainWindow):
         # 使能菜单
         self.weightMenu.setDisabled(False)
 
-    #
+    # 初始化梯度菜单
     def set_grad_menu(self, weight_list):
         self.gradMenu.clear()
         self.gradMenuItems = []
@@ -564,17 +569,20 @@ class MainWindow(QtGui.QMainWindow):
     def init_combo_box(self):
         for item in dir(my_layer):
             if str(item).startswith('Layer_'):
-                self.layerComboBox.addItem(item)
+                self.layerComboBox.addItem(item.replace('Layer_', ''))
         self.layerComboBox.setCurrentIndex(0)
 
         for item in dir(my_loss):
             if str(item).startswith('loss_'):
-                self.lossComboBox.addItem(item)
+                self.lossComboBox.addItem(item.replace('loss_', ''))
         self.lossComboBox.setCurrentIndex(0)
 
         for item in dir(my_optimizer):
             if str(item).startswith('Optimizer_'):
-                self.optimizerComboBox.addItem(item)
+                self.optimizerComboBox.addItem(item.replace('Optimizer_', ''))
+        for item in dir(my_optimizer_my):
+            if str(item).startswith('Optimizer_'):
+                self.optimizerComboBox.addItem(item.replace('Optimizer_', ''))
         self.optimizerComboBox.setCurrentIndex(0)
 
     # 用于在改变模型后，设置与模型相关的参数
@@ -585,13 +593,13 @@ class MainWindow(QtGui.QMainWindow):
         self.epochEdit.setText(str(self.model.epoch))
         # self.set_combo_box()
         for index in range(self.layerComboBox.count()):
-            if self.model.layer_type.__name__ == self.layerComboBox.itemText(index):
+            if self.model.layer_type.__name__.replace('Layer_', '') == self.layerComboBox.itemText(index):
                 self.layerComboBox.setCurrentIndex(index)
         for index in range(self.lossComboBox.count()):
-            if self.model.loss.__name__ == self.lossComboBox.itemText(index):
+            if self.model.loss.__name__.replace('loss_', '') == self.lossComboBox.itemText(index):
                 self.lossComboBox.setCurrentIndex(index)
         for index in range(self.optimizerComboBox.count()):
-            if self.model.optimizer_type.__name__ == self.optimizerComboBox.itemText(index):
+            if self.model.optimizer_type.__name__.replace('Optimizer_', '') == self.optimizerComboBox.itemText(index):
                 self.optimizerComboBox.setCurrentIndex(index)
         self.trainThread.set_model(self.model)
 

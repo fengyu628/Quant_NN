@@ -20,6 +20,7 @@ class Regularizer(object):
 
 class WeightRegularizer(Regularizer):
 
+    # def __init__(self, l1=0., l2=0.):
     def __init__(self, l1=0., l2=0.):
         self.l1 = K.cast_to_floatx(l1)
         self.l2 = K.cast_to_floatx(l2)
