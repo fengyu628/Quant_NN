@@ -5,10 +5,12 @@ import theano
 import theano.tensor as tensor
 from theano import config
 from my_regularizers import *
+from my_initializations import *
 
 
 # 生成随机权值矩阵
 def make_random_matrix_with_shape(dim1, dim2, name=None):
+    # np.random.randn 为为0方差为1的正态分布
     randn = np.random.rand(dim1, dim2)
     # m = (0.01 * randn).astype(config.floatX)
     m = (0.02 * randn).astype(config.floatX)
@@ -39,45 +41,47 @@ class Layer_LSTM(object):
     def __init__(self, input_dim, inner_units):
         self.input_dim = input_dim
         self.inner_units = inner_units
+        self.default_initializer = normal
+        self.default_matrix_initializer = normal
         self.l1_default = 0.
         self.l2_default = 0.01
         # 生成权值
         print('make weight')
-        self.W_i = make_random_matrix_with_shape(input_dim, inner_units, name='InputGate Input Weight')
-        self.W_o = make_random_matrix_with_shape(input_dim, inner_units, name='OutputGate Input Weight')
-        self.W_f = make_random_matrix_with_shape(input_dim, inner_units, name='ForgetGate Input Weight')
-        self.W_z = make_random_matrix_with_shape(input_dim, inner_units, name='BlockInput Input Weight')
+        self.W_i = self.default_matrix_initializer((input_dim, inner_units), name='InputGate Input Weight')
+        self.W_o = self.default_matrix_initializer((input_dim, inner_units), name='OutputGate Input Weight')
+        self.W_f = self.default_matrix_initializer((input_dim, inner_units), name='ForgetGate Input Weight')
+        self.W_z = self.default_matrix_initializer((input_dim, inner_units), name='BlockInput Input Weight')
         self.W_i_regularizer = WeightRegularizer(l1=self.l1_default, l2=self.l2_default)
         self.W_o_regularizer = WeightRegularizer(l1=self.l1_default, l2=self.l2_default)
         self.W_f_regularizer = WeightRegularizer(l1=self.l1_default, l2=self.l2_default)
         self.W_z_regularizer = WeightRegularizer(l1=self.l1_default, l2=self.l2_default)
 
-        self.R_i = make_random_matrix_with_shape(inner_units, inner_units, name='InputGate Recurrent Weight')
-        self.R_o = make_random_matrix_with_shape(inner_units, inner_units, name='OutputGate Recurrent Weight')
-        self.R_f = make_random_matrix_with_shape(inner_units, inner_units, name='ForgetGate Recurrent Weight')
-        self.R_z = make_random_matrix_with_shape(inner_units, inner_units, name='BlockInput Recurrent Weight')
+        self.R_i = self.default_matrix_initializer((inner_units, inner_units), name='InputGate Recurrent Weight')
+        self.R_o = self.default_matrix_initializer((inner_units, inner_units), name='OutputGate Recurrent Weight')
+        self.R_f = self.default_matrix_initializer((inner_units, inner_units), name='ForgetGate Recurrent Weight')
+        self.R_z = self.default_matrix_initializer((inner_units, inner_units), name='BlockInput Recurrent Weight')
         self.R_i_regularizer = WeightRegularizer(l1=self.l1_default, l2=self.l2_default)
         self.R_o_regularizer = WeightRegularizer(l1=self.l1_default, l2=self.l2_default)
         self.R_f_regularizer = WeightRegularizer(l1=self.l1_default, l2=self.l2_default)
         self.R_z_regularizer = WeightRegularizer(l1=self.l1_default, l2=self.l2_default)
 
-        self.b_i = make_random_vector_with_shape(inner_units, name='InputGate Bias')
-        self.b_o = make_random_vector_with_shape(inner_units, name='OutputGate Bias')
-        self.b_f = make_random_vector_with_shape(inner_units, name='ForgetGate Bias')
-        self.b_z = make_random_vector_with_shape(inner_units, name='BlockInput Bias')
-        self.b_i_regularizer = WeightRegularizer(l1=self.l1_default, l2=self.l2_default)
-        self.b_o_regularizer = WeightRegularizer(l1=self.l1_default, l2=self.l2_default)
-        self.b_f_regularizer = WeightRegularizer(l1=self.l1_default, l2=self.l2_default)
-        self.b_z_regularizer = WeightRegularizer(l1=self.l1_default, l2=self.l2_default)
+        self.b_i = self.default_initializer(inner_units, name='InputGate Bias')
+        self.b_o = self.default_initializer(inner_units, name='OutputGate Bias')
+        self.b_f = self.default_initializer(inner_units, name='ForgetGate Bias')
+        self.b_z = self.default_initializer(inner_units, name='BlockInput Bias')
+        # self.b_i_regularizer = WeightRegularizer(l1=self.l1_default, l2=self.l2_default)
+        # self.b_o_regularizer = WeightRegularizer(l1=self.l1_default, l2=self.l2_default)
+        # self.b_f_regularizer = WeightRegularizer(l1=self.l1_default, l2=self.l2_default)
+        # self.b_z_regularizer = WeightRegularizer(l1=self.l1_default, l2=self.l2_default)
 
         # self.p_i = make_random_vector_with_shape(inner_units)
         # self.p_o = make_random_vector_with_shape(inner_units)
         # self.p_f = make_random_vector_with_shape(inner_units)
 
-        self.U_y = make_random_vector_with_shape(inner_units, name='BlockOutput Weight')
-        self.b_y = make_scalar(name='BlockOutput Bias')
+        self.U_y = self.default_initializer(inner_units, name='BlockOutput Weight')
+        self.b_y = self.default_initializer(None, name='BlockOutput Bias')
         self.U_y_regularizer = WeightRegularizer(l1=0., l2=0.)
-        self.b_y_regularizer = WeightRegularizer(l1=0., l2=0.)
+        # self.b_y_regularizer = WeightRegularizer(l1=0., l2=0.)
 
         # self.weights_list = [self.W_i, self.W_o, self.W_f, self.W_z,
         #                      self.R_i, self.R_o, self.R_f, self.R_z,
@@ -100,13 +104,13 @@ class Layer_LSTM(object):
         self.R_f_regularizer.set_param(self.R_f)
         self.R_z_regularizer.set_param(self.R_z)
 
-        self.b_i_regularizer.set_param(self.b_i)
-        self.b_o_regularizer.set_param(self.b_o)
-        self.b_f_regularizer.set_param(self.b_f)
-        self.b_z_regularizer.set_param(self.b_z)
+        # self.b_i_regularizer.set_param(self.b_i)
+        # self.b_o_regularizer.set_param(self.b_o)
+        # self.b_f_regularizer.set_param(self.b_f)
+        # self.b_z_regularizer.set_param(self.b_z)
 
         self.U_y_regularizer.set_param(self.U_y)
-        self.b_y_regularizer.set_param(self.b_y)
+        # self.b_y_regularizer.set_param(self.b_y)
 
         self.regularizers = []
         self.regularizers.append(self.W_i_regularizer)
@@ -119,13 +123,13 @@ class Layer_LSTM(object):
         self.regularizers.append(self.R_i_regularizer)
         self.regularizers.append(self.R_i_regularizer)
 
-        self.regularizers.append(self.b_i_regularizer)
-        self.regularizers.append(self.b_i_regularizer)
-        self.regularizers.append(self.b_i_regularizer)
-        self.regularizers.append(self.b_i_regularizer)
+        # self.regularizers.append(self.b_i_regularizer)
+        # self.regularizers.append(self.b_i_regularizer)
+        # self.regularizers.append(self.b_i_regularizer)
+        # self.regularizers.append(self.b_i_regularizer)
 
         self.regularizers.append(self.U_y_regularizer)
-        self.regularizers.append(self.b_y_regularizer)
+        # self.regularizers.append(self.b_y_regularizer)
 
     def get_weight_list(self):
         return self.weights_list

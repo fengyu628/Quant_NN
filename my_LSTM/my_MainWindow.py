@@ -13,10 +13,10 @@ from my_UI.my_frame_model import ModelFrame
 from my_UI.my_frame_train import TrainFrame
 from my_UI.my_frame_canvas import CanvasFrame
 
-import my_layer
+import my_layers
 import my_loss
-import my_optimizer
-import my_optimizer_my
+import my_optimizers
+import my_optimizers_my
 from my_data_processor import csv_file_to_train_data
 
 # _fromUtf8 = QtCore.QString.fromUtf8
@@ -174,20 +174,12 @@ class MainWindow(QtGui.QMainWindow):
     # 生成模型
     @QtCore.pyqtSlot()
     def build_model(self):
-        try:
-            # 设置模型参数
+        # 设置模型参数
+        self.model.layer_type = getattr(my_layers, 'Layer_' + str(self.layerComboBox.currentText()))
+        self.model.input_dim = int(self.inputDimEdit.text())
+        self.model.inner_units = int(self.innerUnitsEdit.text())
+        self.model.build_layer()
 
-            self.model.layer_type = getattr(my_layer, 'Layer_' + str(self.layerComboBox.currentText()))
-            self.model.input_dim = int(self.inputDimEdit.text())
-            self.model.inner_units = int(self.innerUnitsEdit.text())
-            self.model.build_layer()
-        except Exception as e:
-            print(e)
-            QtGui.QMessageBox.warning(self, 'Build Error',
-                                      str(e),
-                                      QtGui.QMessageBox.Close)
-            return
-        
         self.set_status_before_train()
 
         # TODO:----------- 调试 -----------
@@ -197,26 +189,19 @@ class MainWindow(QtGui.QMainWindow):
     # 开始训练模型
     @QtCore.pyqtSlot()
     def train_model(self):
-        try:
-            # 设置训练参数
-            self.model.loss = getattr(my_loss, 'loss_' + str(self.lossComboBox.currentText()))
+        # 设置训练参数
+        self.model.loss = getattr(my_loss, 'loss_' + str(self.lossComboBox.currentText()))
 
-            optimizer_selected = 'Optimizer_' + str(self.optimizerComboBox.currentText())
-            if optimizer_selected in dir(my_optimizer):
-                self.model.optimizer_type = getattr(my_optimizer, optimizer_selected)
-            elif optimizer_selected in dir(my_optimizer_my):
-                self.model.optimizer_type = getattr(my_optimizer_my, optimizer_selected)
-            else:
-                print('Can not find optimizer!')
+        optimizer_selected = 'Optimizer_' + str(self.optimizerComboBox.currentText())
+        if optimizer_selected in dir(my_optimizers):
+            self.model.optimizer_type = getattr(my_optimizers, optimizer_selected)
+        elif optimizer_selected in dir(my_optimizers_my):
+            self.model.optimizer_type = getattr(my_optimizers_my, optimizer_selected)
+        else:
+            print('Can not find optimizer!')
 
-            self.model.mini_batch_size = float(self.batchSizeEdit.text())
-            self.model.epoch = int(self.epochEdit.text())
-        except Exception as e:
-            print(e)
-            QtGui.QMessageBox.warning(self, 'Train Error',
-                                      str(e),
-                                      QtGui.QMessageBox.Close)
-            return
+        self.model.mini_batch_size = float(self.batchSizeEdit.text())
+        self.model.epoch = int(self.epochEdit.text())
 
         self.TrainFrame.train_model()
 
@@ -567,7 +552,7 @@ class MainWindow(QtGui.QMainWindow):
 
     # 初始化下拉菜单
     def init_combo_box(self):
-        for item in dir(my_layer):
+        for item in dir(my_layers):
             if str(item).startswith('Layer_'):
                 self.layerComboBox.addItem(item.replace('Layer_', ''))
         self.layerComboBox.setCurrentIndex(0)
@@ -577,10 +562,10 @@ class MainWindow(QtGui.QMainWindow):
                 self.lossComboBox.addItem(item.replace('loss_', ''))
         self.lossComboBox.setCurrentIndex(0)
 
-        for item in dir(my_optimizer):
+        for item in dir(my_optimizers):
             if str(item).startswith('Optimizer_'):
                 self.optimizerComboBox.addItem(item.replace('Optimizer_', ''))
-        for item in dir(my_optimizer_my):
+        for item in dir(my_optimizers_my):
             if str(item).startswith('Optimizer_'):
                 self.optimizerComboBox.addItem(item.replace('Optimizer_', ''))
         self.optimizerComboBox.setCurrentIndex(0)

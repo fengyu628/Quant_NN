@@ -91,6 +91,7 @@ def abs(x):
 def cast_to_floatx(x):
     return np.asarray(x, dtype=_FLOATX)
 
+
 def in_train_phase(x, alt):
     if _LEARNING_PHASE is 1:
         return x
@@ -99,3 +100,19 @@ def in_train_phase(x, alt):
     x = T.switch(_LEARNING_PHASE, x, alt)
     x._uses_learning_phase = True
     return x
+
+
+def random_uniform_variable(shape, low, high, dtype=_FLOATX, name=None):
+    return variable(np.random.uniform(low=low, high=high, size=shape),
+                    dtype=dtype, name=name)
+
+
+def random_normal_variable(shape, mean, scale, dtype=_FLOATX, name=None):
+    return variable(np.random.normal(loc=0.0, scale=scale, size=shape),
+                    dtype=dtype, name=name)
+
+
+def ones(shape, dtype=_FLOATX, name=None):
+    '''Instantiate an all-ones variable.
+    '''
+    return variable(np.ones(shape), dtype, name)

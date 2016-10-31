@@ -3,9 +3,9 @@
 import time
 import copy
 
-from my_layer import *
-from my_optimizer import *
-from my_optimizer_my import *
+from my_layers import *
+from my_optimizers import *
+from my_optimizers_my import *
 from my_loss import *
 from my_regularizers import *
 

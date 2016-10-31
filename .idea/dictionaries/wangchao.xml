@@ -4,7 +4,9 @@
       <w>adadelta</w>
       <w>adamax</w>
       <w>astype</w>
+      <w>glorot</w>
       <w>inital</w>
+      <w>lecun</w>
       <w>nadam</w>
       <w>nesterov</w>
       <w>regularizer</w>

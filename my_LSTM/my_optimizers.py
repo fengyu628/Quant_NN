@@ -17,7 +17,7 @@ class Optimizer(object):
         clipvalue: float >= 0. Gradients will be clipped
             when their absolute value exceeds this value.
     """
-    def __init__(self, **kwargs):
+    def __init__(self, clipnorm=5., **kwargs):
         allowed_kwargs = {'clipnorm', 'clipvalue'}
         for k in kwargs:
             if k not in allowed_kwargs:
